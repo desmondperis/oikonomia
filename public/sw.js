@@ -11,12 +11,16 @@
  * reading broke on a phone.
  */
 
-const CACHE = 'oikonomia-shell-v8';
+const CACHE = 'oikonomia-shell-v9';
 
 const SHELL = [
   './',
   'index.html',
   'app.html',
+  'about.html',
+  'privacy.html',
+  'terms.html',
+  'contact.html',
   'styles.css',
   'app.js',
   'shell.js',

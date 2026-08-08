@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#15503c">
 <title>Oikonomia — household money, in ordinary language</title>
-<meta name="description" content="A free household budgeting companion for Indian families. Reads your bank statements on your own phone, builds a plan around what you actually spend, and never sends your finances anywhere.">
+<meta name="description" content="A free household budgeting companion for Indian families. Reads your bank statements on your own phone, plans around what you actually spend, and never sends your finances anywhere.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -13,17 +13,17 @@
 </head>
 <body class="landing-body">
 
-<main class="landing">
+<main class="landing landing-simple">
 
   <header class="landing-head">
-    <img src="icon-512.png" alt="" width="88" height="88" class="landing-mark">
+    <img src="icon-512.png" alt="" width="96" height="96" class="landing-mark">
     <h1 class="landing-name">Oikonomia</h1>
-    <p class="landing-greek">οἰκονομία — the care of a household</p>
+    <p class="landing-greek">the care of a household</p>
   </header>
 
   <p class="landing-lead">
-    Money is something entrusted to us. Oikonomia helps your household look after
-    it well — in ordinary language, on an ordinary phone.
+    Money is something entrusted to us.<br>
+    Let's look after it well.
   </p>
 
   <div id="trouble" class="landing-trouble" hidden></div>
@@ -33,80 +33,24 @@
   </a>
 
   <p class="landing-note">
-    Free. No subscription, no adverts, and no bank login ever asked for.
+    Free · Your statements never leave your phone · No bank login
   </p>
 
-  <section class="landing-points">
-    <div class="landing-point">
-      <h2>Your statements never leave your phone</h2>
-      <p>
-        Oikonomia reads your bank statements on your own device — PDF or CSV, from
-        any Indian bank, password-protected or not. The file itself is never sent
-        anywhere, and neither is the password.
-      </p>
-    </div>
-
-    <div class="landing-point">
-      <h2>Figures you can check</h2>
-      <p>
-        Every statement is re-added and checked against the closing balance your
-        bank printed. If anything disagrees, Oikonomia says so instead of handing
-        you numbers that merely look right.
-      </p>
-    </div>
-
-    <div class="landing-point">
-      <h2>A plan built from what you actually spend</h2>
-      <p>
-        Not a rule about what families ought to spend. Rent, groceries, medicine
-        and school fees are protected first; whatever is left is given somewhere
-        useful to go.
-      </p>
-    </div>
-
-    <div class="landing-point">
-      <h2>Never a lecture</h2>
-      <p>
-        Oikonomia will not shame you for debt or for a hard month. Where money is
-        short, it says so plainly — that is a gap in income, not a failure of
-        character.
-      </p>
-    </div>
-
-    <div class="landing-point">
-      <h2>Grounded in stewardship</h2>
-      <p>
-        Biblical principles about provision, planning, debt, contentment and
-        generosity shape how Oikonomia advises — kept clearly apart from modern
-        financial practice, and never presented as commands about amounts.
-      </p>
-    </div>
-  </section>
-
-  <section class="landing-loop" aria-label="How it works">
-    <h2>How it works</h2>
-    <ol class="steps">
-      <li>Sign in and create your household, or join one with its code.</li>
-      <li>Add what you spend as you go — by typing, or just by saying it.</li>
-      <li>Upload your bank statements whenever it suits you.</li>
-      <li>Oikonomia shows what it understood, and waits for you to agree.</li>
-      <li>Together you make a plan, and it keeps you company through the month.</li>
-    </ol>
-  </section>
-
   <footer class="landing-foot">
-    <p>
-      Oikonomia gives household guidance, not professional financial, tax or
-      investment advice. Figures it reads can be wrong, which is why it shows you
-      where each one came from.
+    <nav class="landing-links">
+      <a href="/about.html">About</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/contact.html">Contact</a>
+    </nav>
+    <p class="landing-foot-note">
+      Household guidance, not professional financial advice.
     </p>
-    <p class="landing-foot-name">Oikonomia</p>
   </footer>
 
 </main>
 
 <script type="module">
-  // A word about what went wrong, if Google sent somebody back without them.
   const reasons = {
     cancelled: 'Sign-in was cancelled. Nothing has changed — try again whenever you like.',
     expired: 'That sign-in took too long and expired. Please try once more.',
@@ -120,7 +64,6 @@
     box.hidden = false;
   }
 
-  // Somebody already signed in should not be asked to sign in again.
   try {
     const response = await fetch('/api/auth/session');
     if (response.ok) {
@@ -133,7 +76,7 @@
       }
     }
   } catch {
-    // Offline, or the sign-in service is not reachable. The button still works.
+    // Offline, or the service is unreachable. The button still works.
   }
 </script>
 

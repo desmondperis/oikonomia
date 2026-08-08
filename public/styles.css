@@ -184,11 +184,146 @@ body {
   text-align: center;
 }
 
+/* ---------- the dashboard ---------- */
+
+.greeting {
+  margin: 1.25rem 0 .75rem;
+  font-size: .8125rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.card {
+  border-radius: 1.125rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+}
+
+.meter {
+  position: relative;
+  height: .4375rem;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.meter-small { height: .3125rem; margin-top: .4375rem; }
+
+.meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width .3s ease-out;
+}
+
+.meter-fill[data-state="quick"] { background: var(--gold); }
+.meter-fill[data-state="over"]  { background: #a4442f; }
+
+.meter-today {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--ink-soft);
+  opacity: .5;
+}
+
+.add-row {
+  display: flex;
+  align-items: stretch;
+  gap: .75rem;
+  margin-bottom: 1.75rem;
+}
+
+.add-main { flex: 1; }
+
+.add-total {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 .875rem;
+  border: 1px solid var(--rule);
+  border-radius: .875rem;
+  background: var(--card);
+}
+
+.add-total-label {
+  font-size: .6875rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.add-total-figure {
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dash-block { margin-bottom: 1.75rem; }
+
+.dash-heading {
+  margin: 0 0 .75rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.category-list { margin: 0; padding: 0; list-style: none; }
+
+.category-item { margin-bottom: 1rem; }
+
+.category-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.category-name { font-size: .9375rem; }
+
+.category-left {
+  font-size: .8125rem;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.insight {
+  margin-bottom: 1.75rem;
+  padding: 1rem 1.125rem;
+  border-radius: .875rem;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+
+.insight strong { display: block; margin-bottom: .375rem; font-size: .9375rem; }
+
+.insight p {
+  margin: 0;
+  font-size: .875rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.next-text {
+  margin: 0 0 .875rem;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
 /* ---------- the one number ---------- */
 
 .headline {
   text-align: center;
-  padding: 3rem 0 2.5rem;
+  padding: 2rem 1.25rem 1.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .headline-label {
@@ -1031,6 +1166,81 @@ body {
   background: color-mix(in srgb, var(--gold) 20%, transparent);
   font-size: .9375rem;
   line-height: 1.55;
+}
+
+.landing-simple {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 2rem;
+}
+
+.landing-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.landing-links a {
+  font-size: .875rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.landing-foot-note {
+  margin: 0;
+  font-size: .8125rem;
+  text-align: center;
+  color: var(--ink-faint);
+}
+
+/* the pages behind those links */
+
+.prose { padding-top: 2rem; }
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 2rem;
+  font-size: .9375rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.prose h1 { margin: 0 0 1rem; font-size: 1.75rem; font-weight: 600; }
+
+.prose h2 {
+  margin: 2.25rem 0 .625rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.prose p, .prose li {
+  font-size: .9375rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+
+.prose .lede { font-size: 1.0625rem; color: var(--ink); }
+
+.prose ul { padding-left: 1.25rem; }
+.prose li { margin-bottom: .375rem; }
+.prose a { color: var(--accent); }
+
+.prose .warn {
+  padding: .875rem 1rem;
+  border-radius: .75rem;
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+  color: var(--ink);
+}
+
+.prose-foot {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  text-align: center;
 }
 
 .landing-point { margin-bottom: 2rem; }

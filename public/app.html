@@ -32,22 +32,51 @@
 
 <main class="app-main">
 
-  <!-- Home -->
+  <!-- Home: the dashboard -->
   <section id="home" class="tab-panel" aria-labelledby="home-title">
-    <h2 id="home-title" class="visually-hidden">Home</h2>
+    <h2 id="home-title" class="visually-hidden">Dashboard</h2>
 
-    <section class="headline" aria-live="polite">
+    <p class="greeting" id="greeting"></p>
+
+    <!-- the one figure that matters -->
+    <section class="headline card" aria-live="polite">
       <p class="headline-label" id="headline-label">Spent this month</p>
       <p class="headline-figure" id="headline-figure">₹0</p>
       <p class="headline-note" id="headline-note">Nothing recorded yet.</p>
+      <div class="meter" id="headline-meter" hidden>
+        <div class="meter-fill" id="headline-meter-fill"></div>
+        <div class="meter-today" id="headline-meter-today"></div>
+      </div>
     </section>
 
-    <button id="add-button" class="primary-action" type="button">
-      <span aria-hidden="true">+</span> Add expense
-    </button>
+    <!-- adding, with the month's spending beside it -->
+    <div class="add-row">
+      <button id="add-button" class="primary-action add-main" type="button">
+        <span aria-hidden="true">+</span> Add expense
+      </button>
+      <div class="add-total">
+        <span class="add-total-label">Spent</span>
+        <span class="add-total-figure" id="month-spent">₹0</span>
+      </div>
+    </div>
+
+    <!-- how each part of the plan is going -->
+    <section id="dash-categories" class="dash-block" hidden>
+      <h3 class="dash-heading">This month</h3>
+      <ul id="category-list" class="category-list"></ul>
+    </section>
+
+    <!-- a word worth saying, occasionally -->
+    <div id="dash-insight"></div>
+
+    <!-- what needs doing next -->
+    <section id="dash-next" class="dash-block" hidden>
+      <h3 class="dash-heading">Next step</h3>
+      <div id="next-body"></div>
+    </section>
 
     <section class="entries" aria-labelledby="entries-heading">
-      <h3 id="entries-heading" class="entries-heading">Recent</h3>
+      <h3 id="entries-heading" class="dash-heading">Recent</h3>
       <ul id="entry-list" class="entry-list"></ul>
       <p id="entries-empty" class="entries-empty">
         Anything you add will appear here.

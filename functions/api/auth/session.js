@@ -1,6 +1,6 @@
 /* Who is signed in, and which household they belong to. */
 
-import { json, readCookie } from '../../lib/http.js';
+import { json, readCookie, setting } from '../../lib/http.js';
 import { ensureSchema, userForSession, householdFor, membersOf } from '../../lib/db.js';
 
 export async function onRequestGet({ request, env }) {
@@ -9,7 +9,7 @@ export async function onRequestGet({ request, env }) {
   await ensureSchema(env.DB);
 
   const user = await userForSession(env.DB, readCookie(request, 'oik_session'));
-  if (!user) return json({ signedIn: false, configured: Boolean(env.GOOGLE_CLIENT_ID) });
+  if (!user) return json({ signedIn: false, configured: Boolean(setting(env.GOOGLE_CLIENT_ID)) });
 
   const household = await householdFor(env.DB, user.id);
   const members = household ? await membersOf(env.DB, household.id) : [];

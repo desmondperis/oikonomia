@@ -117,6 +117,26 @@ if (!/\/api\/auth\/google\/start/.test(landingHtml)) {
   );
 }
 
+// A household is entitled to read what it is agreeing to.
+for (const page of ['about', 'privacy', 'terms', 'contact']) {
+  if (!landingHtml.includes(`/${page}.html`)) {
+    fail(
+      'The landing page links to what a household needs to read',
+      `public/index.html no longer links to ${page}.html.`
+    );
+  }
+}
+
+// The privacy page must keep saying the thing that matters most.
+const privacyHtml = readFileSync(join(root, 'public', 'privacy.html'), 'utf8');
+if (!/No amount, transaction, balance or budget figure is stored on the\s+server/.test(privacyHtml)) {
+  fail(
+    'The privacy page states what is never stored',
+    'The promise that no financial figure reaches the server has gone from privacy.html. ' +
+    'If that stopped being true, the architecture changed and this is the wrong fix.'
+  );
+}
+
 // Only the three identity permissions are requested at the front door. The
 // declared list is what matters, not what the surrounding prose mentions.
 const googleJs = readFileSync(join(root, 'functions', 'lib', 'google.js'), 'utf8');

@@ -1,6 +1,6 @@
 /* Google sends the household back here. */
 
-import { originOf, readCookie, setCookie, clearCookie } from '../../../lib/http.js';
+import { originOf, readCookie, setCookie, clearCookie, setting } from '../../../lib/http.js';
 import { exchangeCode, profileFromIdToken } from '../../../lib/google.js';
 import { ensureSchema, upsertUser, createSession } from '../../../lib/db.js';
 
@@ -27,8 +27,8 @@ export async function onRequestGet({ request, env }) {
   try {
     const tokens = await exchangeCode({
       code,
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      clientId: setting(env.GOOGLE_CLIENT_ID),
+      clientSecret: setting(env.GOOGLE_CLIENT_SECRET),
       redirectUri: `${originOf(request)}/api/auth/google/callback`
     });
 

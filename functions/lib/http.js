@@ -38,6 +38,22 @@ export function clearCookie(name, request) {
   return setCookie(name, '', { maxAge: 0, request });
 }
 
+/**
+ * Read a configured value, tolerating how it was typed or pasted in.
+ *
+ * Secrets get set by people and by tools, and both introduce invisible
+ * characters: a byte-order mark from a Windows pipe, a trailing newline from a
+ * copy and paste. Google rejected an entire sign-in over a single leading
+ * byte-order mark that nothing on screen could show. Everything read from the
+ * environment goes through here.
+ */
+export function setting(value) {
+  return String(value ?? '')
+    .replace(/^﻿/, '')
+    .replace(/[​-‍⁠]/g, '')
+    .trim();
+}
+
 /** Random, unguessable, and short enough to sit in a cookie. */
 export function randomId(bytes = 24) {
   const buffer = new Uint8Array(bytes);

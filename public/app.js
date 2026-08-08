@@ -21,6 +21,8 @@ import { resetImport } from './import.js';
 import { compare } from './budget.js';
 import { setUpShell, showTab, loadSession, renderHousehold } from './shell.js';
 import { setUpAsk, renderAsk } from './ask.js';
+import { financialState } from './engine.js';
+import { principlesFor } from './framework.js';
 
 const STORE_KEY = 'oikonomia.entries.v1';
 
@@ -28,8 +30,18 @@ const el = (id) => document.getElementById(id);
 
 const ui = {
   home: el('home'),
+  greeting: el('greeting'),
   headlineLabel: el('headline-label'),
   headlineFigure: el('headline-figure'),
+  headlineMeter: el('headline-meter'),
+  headlineMeterFill: el('headline-meter-fill'),
+  headlineMeterToday: el('headline-meter-today'),
+  monthSpent: el('month-spent'),
+  dashCategories: el('dash-categories'),
+  categoryList: el('category-list'),
+  dashInsight: el('dash-insight'),
+  dashNext: el('dash-next'),
+  nextBody: el('next-body'),
   headlineNote: el('headline-note'),
   list: el('entry-list'),
   empty: el('entries-empty'),
@@ -170,6 +182,114 @@ function describeWhen(timestamp) {
   return then.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+/* ---------- the dashboard ---------- */
+
+function greetingFor(date) {
+  const hour = date.getHours();
+  const when = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const month = date.toLocaleDateString('en-IN', { month: 'long' });
+  return `${when} · ${month}`;
+}
+
+function makeNode(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+/** Each part of the plan, as a bar rather than a table of figures. */
+function renderCategories(comparison) {
+  const rows = comparison.rows.filter((row) => row.plannedPaise > 0).slice(0, 6);
+  ui.dashCategories.hidden = rows.length === 0;
+  ui.categoryList.replaceChildren();
+
+  for (const row of rows) {
+    const item = makeNode('li', 'category-item');
+
+    const top = makeNode('div', 'category-top');
+    top.append(makeNode('span', 'category-name', row.id));
+    top.append(makeNode(
+      'span',
+      `category-left ${row.standing === 'over' ? 'plan-over' : row.standing === 'quick' ? 'plan-quick' : ''}`.trim(),
+      row.remainingPaise >= 0
+        ? `${formatPaise(row.remainingPaise)} left`
+        : `${formatPaise(-row.remainingPaise)} over`
+    ));
+
+    const bar = makeNode('div', 'meter meter-small');
+    const fill = makeNode('div', 'meter-fill');
+    const share = row.plannedPaise > 0
+      ? Math.min(1, row.actualPaise / row.plannedPaise) : 0;
+    fill.style.width = `${Math.round(share * 100)}%`;
+    fill.dataset.state = row.standing === 'over' ? 'over' : row.standing === 'quick' ? 'quick' : 'fine';
+    bar.append(fill);
+
+    item.append(top, bar);
+    ui.categoryList.append(item);
+  }
+}
+
+/** One observation, where there is genuinely one worth making. */
+function renderInsight(entries) {
+  ui.dashInsight.replaceChildren();
+  if (entries.length === 0) return;
+
+  const state = financialState(entries);
+  const [principle] = principlesFor(state);
+  if (!principle) return;
+
+  const card = makeNode('div', 'insight');
+  card.append(makeNode('strong', null, principle.title));
+  card.append(makeNode('p', null, principle.says));
+  ui.dashInsight.append(card);
+}
+
+/** The single most useful thing this household could do next. */
+function renderNextStep(entries, budget) {
+  ui.nextBody.replaceChildren();
+
+  const step = (text, label, action) => {
+    ui.nextBody.append(makeNode('p', 'next-text', text));
+    const button = makeNode('button', 'secondary-action full', label);
+    button.type = 'button';
+    button.addEventListener('click', action);
+    ui.nextBody.append(button);
+    ui.dashNext.hidden = false;
+  };
+
+  ui.dashNext.hidden = true;
+
+  if (entries.length === 0) {
+    step(
+      'Oikonomia has nothing to go on yet. Upload a few months of bank statements ' +
+      'and it will work out what a normal month looks like for your household.',
+      'Add a bank statement',
+      () => showTab('records')
+    );
+    return;
+  }
+
+  if (!budget) {
+    step(
+      'You have records but no plan yet. A plan turns "what did we spend" into ' +
+      '"what have we still got".',
+      'Make my plan',
+      () => showTab('plan')
+    );
+    return;
+  }
+
+  if (!hasKey()) {
+    step(
+      'Adding an assistant key lets Oikonomia sort unfamiliar shops and answer ' +
+      'questions in plain words. It is free, and takes about two minutes.',
+      'Set up the assistant',
+      () => showTab('more')
+    );
+  }
+}
+
 /* ---------- rendering ---------- */
 
 function render() {
@@ -182,6 +302,14 @@ function render() {
     .reduce((sum, entry) => sum + entry.paise, 0);
 
   const budget = loadBudget();
+
+  ui.monthSpent.textContent = formatPaise(spent);
+  ui.greeting.textContent = greetingFor(new Date());
+
+  /* What has gone sits beside the add button — but only once there is a plan,
+     because until then the big figure above is already saying it, and the same
+     number twice on one screen makes a person doubt both. */
+  ui.monthSpent.parentElement.hidden = !budget;
 
   if (budget) {
     // Once there is a plan, what is left matters far more than what has gone.
@@ -197,9 +325,24 @@ function render() {
       : overspent > 0
         ? `${comparison.daysLeft} days left · ${overspent} ${overspent === 1 ? 'category is' : 'categories are'} over`
         : `${comparison.daysLeft} days left in the month`;
+
+    // A bar with today marked on it, so being ahead or behind is obvious
+    // without reading a single number.
+    const used = comparison.plannedPaise > 0
+      ? Math.min(1, comparison.spentPaise / comparison.plannedPaise) : 0;
+    const throughMonth = comparison.dayOfMonth / (comparison.dayOfMonth + comparison.daysLeft);
+
+    ui.headlineMeter.hidden = false;
+    ui.headlineMeterFill.style.width = `${Math.round(used * 100)}%`;
+    ui.headlineMeterFill.dataset.state = left < 0 ? 'over' : used > throughMonth + 0.15 ? 'quick' : 'fine';
+    ui.headlineMeterToday.style.left = `${Math.round(throughMonth * 100)}%`;
+
+    renderCategories(comparison);
   } else {
     ui.headlineLabel.textContent = 'Spent this month';
     ui.headlineFigure.textContent = formatPaise(spent);
+    ui.headlineMeter.hidden = true;
+    ui.dashCategories.hidden = true;
 
     if (thisMonth.length === 0) {
       ui.headlineNote.textContent = 'Nothing recorded yet.';
@@ -209,6 +352,9 @@ function render() {
         `${count} ${count === 1 ? 'entry' : 'entries'} so far this month.`;
     }
   }
+
+  renderInsight(entries);
+  renderNextStep(entries, budget);
 
   ui.list.replaceChildren();
 
