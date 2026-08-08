@@ -10,20 +10,10 @@
  */
 
 import { parseExpense } from './nlp.js';
+import { formatPaise, readRupees } from './money.js';
+import { setUpImport } from './import.js';
 
 const STORE_KEY = 'oikonomia.entries.v1';
-
-const rupees = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  maximumFractionDigits: 0
-});
-
-const rupeesExact = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  minimumFractionDigits: 2
-});
 
 const el = (id) => document.getElementById(id);
 
@@ -108,7 +98,14 @@ function loadEntries() {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+
+    // Entries written before money could come in as well as go out.
+    return parsed.map((entry) => ({
+      direction: 'debit',
+      source: 'manual',
+      ...entry
+    }));
   } catch {
     // A corrupt store must never lose the app. Start empty and carry on.
     return [];
@@ -126,25 +123,10 @@ function saveEntries(entries) {
 
 let entries = loadEntries();
 
-/* ---------- money ---------- */
-
-/** Parse what a person actually types. Returns paise, or null if unusable. */
-function parseAmount(input) {
-  const cleaned = String(input).replace(/[\s,₹]/g, '');
-  if (!cleaned) return null;
-  if (!/^\d*\.?\d*$/.test(cleaned)) return null;
-
-  const value = Number(cleaned);
-  if (!Number.isFinite(value) || value <= 0) return null;
-  if (value > 10_000_000) return null;
-
-  return Math.round(value * 100);
-}
-
-function formatPaise(paise) {
-  const hasPaise = paise % 100 !== 0;
-  const formatter = hasPaise ? rupeesExact : rupees;
-  return formatter.format(paise / 100).replace(/^₹\s?/, '₹');
+function newId() {
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 /* ---------- dates ---------- */
@@ -176,9 +158,13 @@ function describeWhen(timestamp) {
 function render() {
   const monthStart = startOfMonth();
   const thisMonth = entries.filter((entry) => entry.at >= monthStart);
-  const total = thisMonth.reduce((sum, entry) => sum + entry.paise, 0);
 
-  ui.headlineFigure.textContent = formatPaise(total);
+  // Money coming in is not spending. Only what went out is counted here.
+  const spent = thisMonth
+    .filter((entry) => entry.direction !== 'credit')
+    .reduce((sum, entry) => sum + entry.paise, 0);
+
+  ui.headlineFigure.textContent = formatPaise(spent);
 
   if (thisMonth.length === 0) {
     ui.headlineNote.textContent = 'Nothing recorded yet.';
@@ -217,7 +203,12 @@ function render() {
 
     const amount = document.createElement('div');
     amount.className = 'entry-amount';
-    amount.textContent = formatPaise(entry.paise);
+    if (entry.direction === 'credit') {
+      amount.textContent = `+ ${formatPaise(entry.paise)}`;
+      amount.style.color = 'var(--accent)';
+    } else {
+      amount.textContent = formatPaise(entry.paise);
+    }
 
     button.append(left, amount);
     button.addEventListener('click', () => openSheet(entry.id));
@@ -439,7 +430,7 @@ function showToast(message) {
 function handleSubmit(event) {
   event.preventDefault();
 
-  let paise = parseAmount(ui.amount.value);
+  let paise = readRupees(ui.amount.value);
   let note = ui.note.value.trim();
 
   // Someone may type the whole thing into the description — "burger 250".
@@ -467,10 +458,12 @@ function handleSubmit(event) {
   } else {
     entries = [
       {
-        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+        id: newId(),
         paise,
         note,
-        at: Date.now()
+        at: Date.now(),
+        direction: 'debit',
+        source: 'manual'
       },
       ...entries
     ];
@@ -487,6 +480,55 @@ function handleSubmit(event) {
   closeSheet();
   render();
   showToast(wasEditing ? 'Updated' : `${formatPaise(paise)} added`);
+}
+
+/* ---------- taking in a statement ---------- */
+
+/** What makes two records the same purchase, for the purpose of not repeating it. */
+function fingerprint(entry) {
+  const note = String(entry.note || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const day = new Date(entry.at).toDateString();
+  return `${day}|${entry.paise}|${entry.direction}|${note}`;
+}
+
+function importTransactions(transactions, source) {
+  const known = new Set(entries.map(fingerprint));
+
+  const incoming = transactions.map((transaction) => ({
+    id: newId(),
+    paise: transaction.paise,
+    note: transaction.description || 'Bank transaction',
+    // Midday, so a time zone can never nudge a transaction into another day.
+    at: Date.parse(`${transaction.date}T12:00:00`),
+    direction: transaction.direction === 'credit' ? 'credit' : 'debit',
+    source: 'statement',
+    statement: source.ending ? `${source.bank} ending ${source.ending}` : source.bank
+  }));
+
+  // Re-uploading the same statement must not double the household's spending.
+  const fresh = incoming.filter((entry) => !known.has(fingerprint(entry)));
+  const repeated = incoming.length - fresh.length;
+
+  if (fresh.length === 0) {
+    showToast('Those transactions are already recorded');
+    return;
+  }
+
+  const before = entries;
+  entries = [...fresh, ...entries].sort((a, b) => b.at - a.at);
+
+  if (!saveEntries(entries)) {
+    entries = before;
+    showToast('Could not save on this device');
+    return;
+  }
+
+  render();
+  showToast(
+    repeated > 0
+      ? `${fresh.length} added, ${repeated} already recorded`
+      : `${fresh.length} transactions added`
+  );
 }
 
 /* ---------- wiring ---------- */
@@ -506,6 +548,8 @@ ui.language.addEventListener('change', () => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.sheet.hidden) closeSheet();
 });
+
+setUpImport(importTransactions);
 
 render();
 askLanguageIfNeeded();

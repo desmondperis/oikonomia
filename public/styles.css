@@ -185,6 +185,140 @@ body {
 
 .welcome-choice:active { transform: translateY(1px); }
 
+/* ---------- the quiet second way in ---------- */
+
+.quiet-link {
+  display: block;
+  margin-top: 1rem;
+  padding: .5rem;
+  text-align: center;
+  font-size: .9375rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.quiet-link:active { opacity: .6; }
+
+/* ---------- reading a statement ---------- */
+
+.import { background: var(--paper); }
+
+.import-head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: 1.5rem;
+}
+
+.back-action {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-left: -.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.import-title { margin: 0; font-size: 1.1875rem; font-weight: 600; }
+
+.import-lead {
+  margin: 0 0 1.5rem;
+  font-size: 1rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.import-note {
+  margin: -.5rem 0 1.25rem;
+  font-size: .875rem;
+  color: var(--ink-faint);
+  line-height: 1.5;
+}
+
+.file-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .375rem;
+  min-height: 9rem;
+  padding: 1.5rem;
+  border: 1.5px dashed var(--rule);
+  border-radius: 1rem;
+  background: var(--card);
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.file-drop strong { font-size: 1.0625rem; color: var(--accent); }
+.file-drop span { font-size: .875rem; color: var(--ink-faint); }
+.file-drop:active { border-color: var(--accent); }
+
+/* what we understood */
+
+.understood { margin-bottom: 1.5rem; }
+
+.understood-source {
+  margin: 0 0 1.25rem;
+  font-size: .9375rem;
+  color: var(--ink-soft);
+}
+
+.figure-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .875rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.figure-row dt { color: var(--ink-soft); font-size: .9375rem; }
+
+.figure-row dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.verdict {
+  display: flex;
+  gap: .625rem;
+  padding: 1rem;
+  border-radius: .875rem;
+  margin: 1.5rem 0;
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+
+.verdict-good {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--ink);
+}
+
+.verdict-warn {
+  background: color-mix(in srgb, var(--gold) 20%, transparent);
+  color: var(--ink);
+}
+
+.verdict strong { display: block; margin-bottom: .25rem; }
+
+.mismatch-list {
+  margin: .625rem 0 0;
+  padding-left: 1.125rem;
+  font-size: .875rem;
+  color: var(--ink-soft);
+}
+
+.mismatch-list li { margin-bottom: .25rem; }
+
 /* ---------- recent entries ---------- */
 
 .entries { margin-top: 2.5rem; }

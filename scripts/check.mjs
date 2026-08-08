@@ -124,18 +124,40 @@ if (/\bfetch\s*\(/.test(appJs)) {
   );
 }
 
-/* ---------- the spoken-expense reader must still read ---------- */
+/* ---------- the readers must still read ---------- */
 
 const { spawnSync } = await import('node:child_process');
 
-const nlp = spawnSync(process.execPath, [join(root, 'scripts', 'test-nlp.mjs')], {
-  encoding: 'utf8'
-});
+function runSuite(file, promise) {
+  const run = spawnSync(process.execPath, [join(root, 'scripts', file)], {
+    encoding: 'utf8'
+  });
+  if (run.status !== 0) {
+    fail(promise, (run.stderr || run.stdout || '').trim());
+  }
+  return run;
+}
 
-if (nlp.status !== 0) {
+const nlp = runSuite('test-nlp.mjs', 'Spoken expenses are read correctly');
+const statements = runSuite('test-statements.mjs', 'Bank statements are read correctly');
+
+// A statement is never trusted on its own say-so.
+const statementJs = readFileSync(join(root, 'public', 'statements', 'statement.js'), 'utf8');
+if (!/verifyAgainstBalance/.test(statementJs)) {
   fail(
-    'Spoken expenses are read correctly',
-    (nlp.stderr || nlp.stdout || '').trim()
+    "Every import is checked against the bank's own balance",
+    'verifyAgainstBalance has gone from public/statements/statement.js. Without it, a misread ' +
+    'amount would be imported silently.'
+  );
+}
+
+// The password to a protected statement must stay on the device.
+const pdfJs = readFileSync(join(root, 'public', 'statements', 'pdf.js'), 'utf8');
+if (/localStorage|sessionStorage|indexedDB|fetch\s*\(|XMLHttpRequest/.test(pdfJs)) {
+  fail(
+    'Statement passwords never leave the device',
+    'public/statements/pdf.js stores or transmits something. The password and the file ' +
+    'must exist only in memory, for as long as it takes to read them.'
   );
 }
 
@@ -144,6 +166,7 @@ if (nlp.status !== 0) {
 if (failures.length === 0) {
   console.log(`✓ ${scripts.length} scripts parsed, all product promises hold.`);
   console.log((nlp.stdout || '').trim());
+  console.log((statements.stdout || '').trim());
   process.exit(0);
 }
 

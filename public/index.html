@@ -39,6 +39,8 @@
     <span aria-hidden="true">+</span> Add expense
   </button>
 
+  <a id="import-link" class="quiet-link" href="#statement">Upload a bank statement</a>
+
   <section class="entries" aria-labelledby="entries-heading">
     <h2 id="entries-heading" class="entries-heading">Recent</h2>
     <ul id="entry-list" class="entry-list"></ul>
@@ -47,6 +49,52 @@
     </p>
   </section>
 </main>
+
+<section id="import" class="screen import" hidden aria-labelledby="import-title">
+  <header class="import-head">
+    <button type="button" id="import-back" class="back-action" aria-label="Go back">←</button>
+    <h2 id="import-title" class="import-title">Bank statement</h2>
+  </header>
+
+  <div id="import-choose">
+    <p class="import-lead">
+      Upload a statement and I'll read it for you. The file stays on your phone —
+      it is never sent anywhere.
+    </p>
+
+    <label class="file-drop" for="statement-file">
+      <strong>Choose a statement</strong>
+      <span>PDF or CSV, from any Indian bank</span>
+    </label>
+    <input id="statement-file" type="file" accept=".pdf,.csv,.tsv,.txt" hidden>
+  </div>
+
+  <div id="import-password" hidden>
+    <p class="import-lead" id="import-password-message">
+      This statement is password protected. Enter the password to open it.
+    </p>
+    <label class="field">
+      <span class="field-label">Password</span>
+      <input id="statement-password" type="password" autocomplete="off" inputmode="text">
+    </label>
+    <p class="import-note">
+      The password is used here on your phone and then forgotten. It is not saved
+      and not sent anywhere.
+    </p>
+    <button type="button" id="password-submit" class="primary-action">Open statement</button>
+  </div>
+
+  <div id="import-working" hidden>
+    <p class="import-lead" id="import-working-message">Reading your statement…</p>
+  </div>
+
+  <div id="import-result" hidden></div>
+
+  <div id="import-error" hidden>
+    <p class="import-lead" id="import-error-message"></p>
+    <button type="button" id="import-retry" class="primary-action">Try another file</button>
+  </div>
+</section>
 
 <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
 
