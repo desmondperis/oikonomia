@@ -1,0 +1,306 @@
+/* The plan screen.
+ *
+ * Two things live here. First, what Oikonomia understood from the household's
+ * records — shown before any plan is made, and open to correction, because a
+ * plan built on figures the household has not agreed with is worthless.
+ *
+ * Then the plan itself: what is set aside for what, how the month is going
+ * against it, and what changing one figure would cost elsewhere.
+ */
+
+import { formatPaise, readRupees } from './money.js';
+import { typicalMonth, financialState, monthName, recurringCosts } from './engine.js';
+import { buildBudget, adjustLine, compare } from './budget.js';
+import { principlesFor, categoryInfo } from './framework.js';
+
+const STORE = 'oikonomia.budget.v1';
+
+const el = (id) => document.getElementById(id);
+
+const ui = {
+  home: el('home'),
+  link: el('plan-link'),
+  screen: el('plan'),
+  back: el('plan-back'),
+  body: el('plan-body')
+};
+
+let getEntries = () => [];
+let onChanged = () => {};
+
+/* ---------- keeping the plan ---------- */
+
+export function loadBudget() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveBudget(budget) {
+  try {
+    localStorage.setItem(STORE, JSON.stringify(budget));
+    return true;
+  } catch { return false; }
+}
+
+export function clearBudget() {
+  try { localStorage.removeItem(STORE); } catch { /* fine */ }
+}
+
+/* ---------- small pieces ---------- */
+
+function node(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+
+function figureRow(label, value, muted = false) {
+  const row = node('div', 'figure-row');
+  const term = node('dt', null, label);
+  const detail = node('dd', muted ? 'muted' : null, value);
+  row.append(term, detail);
+  return row;
+}
+
+/* ---------- what we understood ---------- */
+
+function understanding(entries) {
+  const typical = typicalMonth(entries);
+  const box = document.createDocumentFragment();
+
+  box.append(node('h3', 'import-title', "Here's what I understood"));
+
+  if (typical.monthsUsed === 0) {
+    box.append(node('p', 'import-lead',
+      'Nothing to go on yet. Add a few expenses, or upload a bank statement, and ' +
+      'Oikonomia will work out what a normal month looks like for your household.'));
+    return { fragment: box, typical, ready: false };
+  }
+
+  box.append(node('p', 'understood-source',
+    typical.monthsComplete > 0
+      ? `From ${typical.monthsUsed} complete month${typical.monthsUsed === 1 ? '' : 's'} of your records.`
+      : 'From your records so far. This will settle as more months go by.'));
+
+  const figures = node('dl', 'understood');
+  figures.append(
+    figureRow('Money coming in', typical.income > 0 ? formatPaise(typical.income) : 'not known yet'),
+    figureRow('Things you must pay', formatPaise(typical.essential)),
+    figureRow('Everything else', formatPaise(typical.flexible)),
+    figureRow(
+      typical.surplus >= 0 ? 'Left over' : 'Short by',
+      formatPaise(Math.abs(typical.surplus))
+    )
+  );
+  box.append(figures);
+
+  box.append(node('p', 'import-note',
+    'These are worked out from your own records, not estimated. If something ' +
+    'looks wrong, correct the entries on the home screen and come back — the ' +
+    'plan is built from these figures.'));
+
+  return { fragment: box, typical, ready: typical.income > 0 || typical.essential > 0 };
+}
+
+/* ---------- a word worth saying ---------- */
+
+function guidance(entries) {
+  const state = financialState(entries);
+  const [principle] = principlesFor(state);
+  if (!principle) return null;
+
+  const box = node('div', 'principle');
+  box.append(node('strong', null, principle.title));
+  box.append(node('p', 'principle-says', principle.says));
+
+  const passage = principle.passages.find((item) => item.text);
+  if (passage) {
+    const quote = node('blockquote', 'principle-passage');
+    quote.append(node('span', null, `“${passage.text}”`));
+    quote.append(node('cite', null, passage.ref));
+    box.append(quote);
+  }
+
+  box.append(node('p', 'principle-source', 'A principle, not a rule about amounts. What you do with it is yours.'));
+  return box;
+}
+
+/* ---------- the plan ---------- */
+
+function planLines(budget, entries) {
+  const comparison = compare(budget, entries);
+  const list = node('ul', 'plan-list');
+
+  for (const line of budget.lines) {
+    const row = comparison.rows.find((item) => item.id === line.id);
+    const item = node('li', 'plan-item');
+
+    const head = node('button', 'plan-row');
+    head.type = 'button';
+
+    const left = node('div', 'plan-name');
+    left.append(node('span', null, line.id));
+    if (line.fixed) left.append(node('span', 'plan-tag', 'every month'));
+
+    const right = node('div', 'plan-amounts');
+    right.append(node('span', 'plan-planned', formatPaise(line.plannedPaise)));
+
+    if (row && row.actualPaise > 0) {
+      const state = row.standing === 'over' ? 'plan-over'
+        : row.standing === 'quick' ? 'plan-quick' : 'plan-fine';
+      right.append(node('span', `plan-remaining ${state}`,
+        row.remainingPaise >= 0
+          ? `${formatPaise(row.remainingPaise)} left`
+          : `${formatPaise(-row.remainingPaise)} over`));
+    }
+
+    head.append(left, right);
+
+    const why = node('p', 'plan-why', line.basis);
+    why.hidden = true;
+
+    const editor = node('div', 'plan-editor');
+    editor.hidden = true;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.value = String(Math.round(line.plannedPaise / 100));
+    input.className = 'plan-input';
+    input.setAttribute('aria-label', `Planned amount for ${line.id}`);
+
+    const apply = node('button', 'secondary-action', 'Change');
+    apply.type = 'button';
+
+    const consequence = node('p', 'plan-consequence');
+    consequence.hidden = true;
+
+    apply.addEventListener('click', () => {
+      const paise = readRupees(input.value);
+      if (paise === null) {
+        consequence.textContent = 'Please enter an amount, like 5000.';
+        consequence.hidden = false;
+        return;
+      }
+
+      const { budget: next, consequence: told } = adjustLine(budget, line.id, paise);
+      saveBudget(next);
+      if (told) {
+        consequence.textContent = told.text;
+        consequence.hidden = false;
+      }
+      onChanged();
+      render();
+    });
+
+    editor.append(input, apply);
+
+    head.addEventListener('click', () => {
+      const open = why.hidden;
+      why.hidden = !open;
+      editor.hidden = !open;
+    });
+
+    item.append(head, why, editor, consequence);
+    list.appendChild(item);
+  }
+
+  return { list, comparison };
+}
+
+/* ---------- putting the screen together ---------- */
+
+function render() {
+  const entries = getEntries();
+  const budget = loadBudget();
+
+  ui.body.replaceChildren();
+
+  if (!budget) {
+    const { fragment, ready } = understanding(entries);
+    ui.body.append(fragment);
+
+    const word = guidance(entries);
+    if (word) ui.body.append(word);
+
+    if (ready) {
+      const make = node('button', 'primary-action', 'Make my plan');
+      make.type = 'button';
+      make.addEventListener('click', () => {
+        const fresh = buildBudget(entries);
+        if (fresh.lines.length === 0) return;
+        saveBudget(fresh);
+        onChanged();
+        render();
+      });
+      ui.body.append(make);
+    }
+    return;
+  }
+
+  ui.body.append(node('h3', 'import-title', `Your plan for ${monthName(budget.month)}`));
+
+  const { list, comparison } = planLines(budget, entries);
+
+  const totals = node('dl', 'understood');
+  totals.append(
+    figureRow('Planned', formatPaise(budget.plannedPaise)),
+    figureRow('Spent so far', formatPaise(comparison.spentPaise)),
+    figureRow('Still to spend', formatPaise(comparison.remainingPaise))
+  );
+  ui.body.append(totals);
+
+  for (const note of budget.notes || []) {
+    const box = node('div', 'verdict verdict-warn');
+    const wrapper = node('div');
+    wrapper.append(node('strong', null,
+      note.kind === 'shortfall' ? 'This plan does not balance' : 'Some spending was trimmed'));
+    wrapper.append(node('span', null, note.text));
+    box.append(wrapper);
+    ui.body.append(box);
+  }
+
+  ui.body.append(node('p', 'import-note', 'Tap any line to see why it is set there, and to change it.'));
+  ui.body.append(list);
+
+  const word = guidance(entries);
+  if (word) ui.body.append(word);
+
+  const redo = node('button', 'secondary-action full', 'Start the plan again');
+  redo.type = 'button';
+  redo.addEventListener('click', () => {
+    if (redo.dataset.armed !== 'true') {
+      redo.dataset.armed = 'true';
+      redo.textContent = 'Tap again to rebuild it from your records';
+      return;
+    }
+    clearBudget();
+    onChanged();
+    render();
+  });
+  ui.body.append(redo);
+}
+
+/* ---------- wiring ---------- */
+
+export function setUpPlan({ entries, changed }) {
+  getEntries = entries;
+  onChanged = changed || (() => {});
+
+  ui.link.addEventListener('click', (event) => {
+    event.preventDefault();
+    ui.home.hidden = true;
+    ui.screen.hidden = false;
+    render();
+    ui.back.focus();
+  });
+
+  ui.back.addEventListener('click', () => {
+    ui.screen.hidden = true;
+    ui.home.hidden = false;
+    ui.link.focus();
+  });
+}

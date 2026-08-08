@@ -11,7 +11,7 @@
  * reading broke on a phone.
  */
 
-const CACHE = 'oikonomia-shell-v6';
+const CACHE = 'oikonomia-shell-v7';
 
 const SHELL = [
   './',
@@ -22,6 +22,10 @@ const SHELL = [
   'money.js',
   'import.js',
   'ai.js',
+  'framework.js',
+  'engine.js',
+  'budget.js',
+  'plan.js',
   'statements/fields.js',
   'statements/table.js',
   'statements/csv.js',

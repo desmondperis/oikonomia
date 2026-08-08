@@ -16,6 +16,8 @@ import {
   getKey, setKey, hasKey, testConnection,
   categoriseLocally, categoriseWithAi, merchantOf
 } from './ai.js';
+import { setUpPlan, loadBudget } from './plan.js';
+import { compare } from './budget.js';
 
 const STORE_KEY = 'oikonomia.entries.v1';
 
@@ -23,6 +25,7 @@ const el = (id) => document.getElementById(id);
 
 const ui = {
   home: el('home'),
+  headlineLabel: el('headline-label'),
   headlineFigure: el('headline-figure'),
   headlineNote: el('headline-note'),
   list: el('entry-list'),
@@ -177,14 +180,33 @@ function render() {
     .filter((entry) => entry.direction !== 'credit')
     .reduce((sum, entry) => sum + entry.paise, 0);
 
-  ui.headlineFigure.textContent = formatPaise(spent);
+  const budget = loadBudget();
 
-  if (thisMonth.length === 0) {
-    ui.headlineNote.textContent = 'Nothing recorded yet.';
+  if (budget) {
+    // Once there is a plan, what is left matters far more than what has gone.
+    const comparison = compare(budget, entries);
+    const left = comparison.remainingPaise;
+
+    ui.headlineLabel.textContent = left >= 0 ? 'Left for this month' : 'Over your plan by';
+    ui.headlineFigure.textContent = formatPaise(Math.abs(left));
+
+    const overspent = comparison.rows.filter((row) => row.standing === 'over').length;
+    ui.headlineNote.textContent = left < 0
+      ? 'Worth a look at your plan.'
+      : overspent > 0
+        ? `${comparison.daysLeft} days left · ${overspent} ${overspent === 1 ? 'category is' : 'categories are'} over`
+        : `${comparison.daysLeft} days left in the month`;
   } else {
-    const count = thisMonth.length;
-    ui.headlineNote.textContent =
-      `${count} ${count === 1 ? 'entry' : 'entries'} so far this month.`;
+    ui.headlineLabel.textContent = 'Spent this month';
+    ui.headlineFigure.textContent = formatPaise(spent);
+
+    if (thisMonth.length === 0) {
+      ui.headlineNote.textContent = 'Nothing recorded yet.';
+    } else {
+      const count = thisMonth.length;
+      ui.headlineNote.textContent =
+        `${count} ${count === 1 ? 'entry' : 'entries'} so far this month.`;
+    }
   }
 
   ui.list.replaceChildren();
@@ -768,9 +790,11 @@ document.addEventListener('keydown', (event) => {
 });
 
 setUpImport(importTransactions);
+setUpPlan({ entries: () => entries, changed: render });
 
 render();
 askLanguageIfNeeded();
+categoriseEntries({ quiet: true });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

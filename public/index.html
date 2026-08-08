@@ -40,7 +40,8 @@
   </button>
 
   <nav class="quiet-links">
-    <a id="import-link" class="quiet-link" href="#statement">Upload a bank statement</a>
+    <a id="plan-link" class="quiet-link" href="#plan">Your plan</a>
+    <a id="import-link" class="quiet-link" href="#statement">Bank statement</a>
     <a id="settings-link" class="quiet-link" href="#settings">Settings</a>
   </nav>
 
@@ -104,6 +105,14 @@
     <p class="import-lead" id="import-error-message"></p>
     <button type="button" id="import-retry" class="primary-action">Try another file</button>
   </div>
+</section>
+
+<section id="plan" class="screen import" hidden aria-labelledby="plan-title">
+  <header class="import-head">
+    <button type="button" id="plan-back" class="back-action" aria-label="Go back">←</button>
+    <h2 id="plan-title" class="import-title">Your plan</h2>
+  </header>
+  <div id="plan-body"></div>
 </section>
 
 <section id="settings" class="screen import" hidden aria-labelledby="settings-title">

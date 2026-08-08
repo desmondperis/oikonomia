@@ -251,6 +251,135 @@ body {
   .status-bad { color: #e59a86; }
 }
 
+/* ---------- the plan ---------- */
+
+.plan-list { margin: 0 0 1.5rem; padding: 0; list-style: none; }
+
+.plan-item { border-bottom: 1px solid var(--rule); }
+
+.plan-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: var(--tap);
+  padding: .875rem 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.plan-row:active { opacity: .6; }
+
+.plan-name { min-width: 0; overflow-wrap: anywhere; }
+
+.plan-tag {
+  display: block;
+  font-size: .75rem;
+  color: var(--ink-faint);
+  margin-top: .125rem;
+}
+
+.plan-amounts { text-align: right; white-space: nowrap; }
+
+.plan-planned {
+  display: block;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-remaining { display: block; font-size: .8125rem; margin-top: .125rem; }
+
+.plan-fine  { color: var(--accent); }
+.plan-quick { color: var(--gold); }
+.plan-over  { color: #a4442f; }
+
+@media (prefers-color-scheme: dark) {
+  .plan-over { color: #e59a86; }
+}
+
+.plan-why {
+  margin: 0 0 .75rem;
+  font-size: .875rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.plan-editor {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+
+.plan-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0 .875rem;
+  border: 1px solid var(--rule);
+  border-radius: .75rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-consequence {
+  margin: -.5rem 0 1rem;
+  font-size: .875rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.muted { color: var(--ink-faint); font-weight: 400; }
+
+/* a principle, offered rather than preached */
+
+.principle {
+  margin: 1.5rem 0;
+  padding: 1.125rem;
+  border-radius: .875rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+}
+
+.principle strong { display: block; margin-bottom: .5rem; }
+
+.principle-says {
+  margin: 0 0 .875rem;
+  font-size: .9375rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.principle-passage {
+  margin: 0 0 .75rem;
+  padding-left: .875rem;
+  border-left: 2px solid var(--gold);
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.principle-passage cite {
+  display: block;
+  margin-top: .375rem;
+  font-size: .8125rem;
+  font-style: normal;
+  color: var(--ink-faint);
+}
+
+.principle-source {
+  margin: 0;
+  font-size: .8125rem;
+  color: var(--ink-faint);
+}
+
 .entry-category {
   display: block;
   font-size: .8125rem;

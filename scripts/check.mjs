@@ -163,6 +163,27 @@ function runSuite(file, promise) {
 
 const nlp = runSuite('test-nlp.mjs', 'Spoken expenses are read correctly');
 const statements = runSuite('test-statements.mjs', 'Bank statements are read correctly');
+const engine = runSuite('test-engine.mjs', 'The financial engine calculates correctly');
+
+// Every passage the app can quote must be written down here. Nothing else may
+// be cited, which is what stops a model inventing a verse.
+const frameworkJs = readFileSync(join(root, 'public', 'framework.js'), 'utf8');
+if (!/PRINCIPLES/.test(frameworkJs) || !/World English Bible/.test(frameworkJs)) {
+  fail(
+    'Scripture is quoted only from the written framework',
+    'public/framework.js no longer holds the reviewed set of passages, or its ' +
+    'public-domain translation note has gone.'
+  );
+}
+
+// The engine, not the assistant, produces figures.
+const engineJs = readFileSync(join(root, 'public', 'engine.js'), 'utf8');
+if (/openrouter|categoriseWithAi|\bfetch\s*\(/i.test(engineJs)) {
+  fail(
+    'The engine never asks a model for a number',
+    'public/engine.js reaches for the assistant. Every authoritative figure must be arithmetic.'
+  );
+}
 
 // A statement is never trusted on its own say-so.
 const statementJs = readFileSync(join(root, 'public', 'statements', 'statement.js'), 'utf8');
@@ -190,6 +211,7 @@ if (failures.length === 0) {
   console.log(`✓ ${scripts.length} scripts parsed, all product promises hold.`);
   console.log((nlp.stdout || '').trim());
   console.log((statements.stdout || '').trim());
+  console.log((engine.stdout || '').trim());
   process.exit(0);
 }
 
