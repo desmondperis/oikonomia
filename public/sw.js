@@ -5,7 +5,7 @@
  * in the device's own storage, never in here.
  */
 
-const CACHE = 'oikonomia-shell-v2';
+const CACHE = 'oikonomia-shell-v3';
 
 const SHELL = [
   './',
@@ -14,8 +14,8 @@ const SHELL = [
   'app.js',
   'nlp.js',
   'manifest.webmanifest',
-  'icon.svg',
-  'icon-192.png'
+  'icon-192.png',
+  'icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {

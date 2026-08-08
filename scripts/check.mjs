@@ -89,6 +89,25 @@ if (/type="range"/.test(indexHtml)) {
   );
 }
 
+// Anything marked hidden must actually be hidden. A class that sets `display`
+// silently defeats the hidden attribute, which once left an overlay covering
+// the whole app and swallowing every tap.
+if (!/\[hidden\]\s*\{[^}]*display:\s*none\s*!important/.test(stylesCss)) {
+  fail(
+    'Anything marked hidden is actually hidden',
+    'The [hidden] { display: none !important } rule is missing from public/styles.css. ' +
+    'Without it, any class setting `display` leaves hidden elements on screen.'
+  );
+}
+
+// The mark is the "O". Nothing else may stand in for it.
+if (/icon\.svg/.test(indexHtml)) {
+  fail(
+    'The app uses the Oikonomia mark',
+    'public/index.html still references icon.svg, which is not the brand mark.'
+  );
+}
+
 // Touch targets stay large enough for a real thumb on a cheap phone.
 if (!/--tap:\s*3(\.\d+)?rem/.test(stylesCss)) {
   fail(

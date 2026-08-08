@@ -8,8 +8,9 @@
   --ink-soft:   #6b665e;
   --ink-faint:  #9a948a;
   --rule:       #e5dfd4;
-  --accent:     #4a6b52;
+  --accent:     #15503c;   /* the green of the mark */
   --accent-ink: #ffffff;
+  --gold:       #e39a2e;   /* the gold of the mark */
   --shadow:     0 1px 2px rgba(43, 41, 38, .06), 0 8px 24px rgba(43, 41, 38, .06);
 
   --tap: 3.25rem;           /* every touch target is at least this tall */
@@ -24,13 +25,20 @@
     --ink-soft:  #a8a29a;
     --ink-faint: #7a746c;
     --rule:      #38352f;
-    --accent:    #7fa389;
-    --accent-ink:#14211a;
+    --accent:    #5fa98a;
+    --accent-ink:#0e2a20;
+    --gold:      #e9a94a;
     --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
   }
 }
 
 * { box-sizing: border-box; }
+
+/* The browser hides [hidden] with `display: none`, but any class of ours that
+   sets `display` beats it and the element stays on screen. That once left the
+   welcome overlay covering the whole app and swallowing every tap. Nothing
+   marked hidden may ever be visible. */
+[hidden] { display: none !important; }
 
 html { -webkit-text-size-adjust: 100%; }
 
