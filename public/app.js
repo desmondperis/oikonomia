@@ -204,6 +204,8 @@ function renderCategories(comparison) {
   ui.dashCategories.hidden = rows.length === 0;
   ui.categoryList.replaceChildren();
 
+  if (rows.length === 0) return;
+
   for (const row of rows) {
     const item = makeNode('li', 'category-item');
 
@@ -849,16 +851,14 @@ function refreshSettings() {
 function showKeyStatus(message = null, kind = null) {
   if (message) {
     ui.apiStatus.textContent = message;
-    ui.apiStatus.className = `import-note ${kind || ''}`.trim();
   } else if (hasKey()) {
-    const key = getKey();
-    ui.apiStatus.textContent = `Key added, ending ${key.slice(-4)}.`;
-    ui.apiStatus.className = 'import-note';
+    ui.apiStatus.textContent = `Connected · key ending ${getKey().slice(-4)}`;
   } else {
-    ui.apiStatus.textContent = 'No key added yet.';
-    ui.apiStatus.className = 'import-note';
+    ui.apiStatus.textContent = 'Not set up yet';
   }
 
+  // The row keeps its own styling; only the tone changes.
+  ui.apiStatus.className = `row-note ${kind || ''}`.trim();
   ui.apiRemove.hidden = !hasKey();
 }
 
@@ -910,10 +910,14 @@ ui.apiSave.addEventListener('click', saveAndTestKey);
 
 /* Erasing everything is deliberate and complete: records, plan, learned
    categories, the key. Two taps, and then it is genuinely gone. */
+const eraseTitle = ui.eraseAll.querySelector('.row-title');
+const eraseNote = ui.eraseAll.querySelector('.row-note');
+
 ui.eraseAll.addEventListener('click', () => {
   if (ui.eraseAll.dataset.armed !== 'true') {
     ui.eraseAll.dataset.armed = 'true';
-    ui.eraseAll.textContent = 'Tap again to erase everything permanently';
+    eraseTitle.textContent = 'Tap again to erase everything';
+    eraseNote.textContent = 'This cannot be undone';
     return;
   }
 
@@ -926,7 +930,8 @@ ui.eraseAll.addEventListener('click', () => {
   } catch { /* nothing more we can do */ }
 
   ui.eraseAll.dataset.armed = 'false';
-  ui.eraseAll.textContent = 'Erase everything on this device';
+  eraseTitle.textContent = 'Erase everything on this device';
+  eraseNote.textContent = 'Records, plan, categories and key';
   render();
   showToast('Everything erased');
 });
