@@ -491,7 +491,7 @@ function fingerprint(entry) {
   return `${day}|${entry.paise}|${entry.direction}|${note}`;
 }
 
-function importTransactions(transactions, source) {
+function importTransactions(transactions) {
   const known = new Set(entries.map(fingerprint));
 
   const incoming = transactions.map((transaction) => ({
@@ -502,7 +502,9 @@ function importTransactions(transactions, source) {
     at: Date.parse(`${transaction.date}T12:00:00`),
     direction: transaction.direction === 'credit' ? 'credit' : 'debit',
     source: 'statement',
-    statement: source.ending ? `${source.bank} ending ${source.ending}` : source.bank
+    statement: transaction.ending
+      ? `${transaction.bank} ending ${transaction.ending}`
+      : transaction.bank
   }));
 
   // Re-uploading the same statement must not double the household's spending.

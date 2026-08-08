@@ -1,11 +1,17 @@
 /* Oikonomia service worker.
  *
- * Its only job at this stage is to make the app open on a bad connection or no
- * connection at all. It caches the shell and nothing else; household data lives
- * in the device's own storage, never in here.
+ * Its job is to make the app open on a bad connection or none at all. It caches
+ * the shell and nothing else; household data lives in the device's own storage,
+ * never in here.
+ *
+ * One rule matters more than the rest: a failed request for a script or an
+ * image must fail. Handing back index.html instead — which an earlier version
+ * did — means a module import silently receives a web page, and the failure
+ * surfaces somewhere far away and makes no sense. That is exactly how statement
+ * reading broke on a phone.
  */
 
-const CACHE = 'oikonomia-shell-v4';
+const CACHE = 'oikonomia-shell-v5';
 
 const SHELL = [
   './',
@@ -26,6 +32,14 @@ const SHELL = [
   'icon-512.png'
 ];
 
+/* The PDF reader is over a megabyte, so it is fetched after the app is already
+   usable rather than holding up the first load. Being cached before anyone
+   uploads a statement is what makes reading one work on a weak connection. */
+const HEAVY = [
+  'vendor/pdf.min.mjs',
+  'vendor/pdf.worker.min.mjs'
+];
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
@@ -35,13 +49,15 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
+    await self.clients.claim();
+
+    // Quietly, and never fatally: missing this only costs one slow first read.
+    const cache = await caches.open(CACHE);
+    await Promise.allSettled(HEAVY.map((path) => cache.add(path)));
+  })());
 });
 
 self.addEventListener('fetch', (event) => {
@@ -50,15 +66,29 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (new URL(request.url).origin !== self.location.origin) return;
 
-  // Network first, so a deployed update is picked up promptly, falling back to
-  // the cached shell when the connection is poor or absent.
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(request);
+
+      // Only keep good responses. A 404 cached is a 404 for ever.
+      if (response.ok) {
         const copy = response.clone();
         caches.open(CACHE).then((cache) => cache.put(request, copy));
-        return response;
-      })
-      .catch(() => caches.match(request).then((hit) => hit || caches.match('index.html')))
-  );
+      }
+
+      return response;
+    } catch (networkError) {
+      const hit = await caches.match(request);
+      if (hit) return hit;
+
+      // Opening the app offline should still show the app.
+      if (request.mode === 'navigate') {
+        const shell = await caches.match('index.html');
+        if (shell) return shell;
+      }
+
+      // Anything else must fail honestly rather than pretend to be a page.
+      throw networkError;
+    }
+  })());
 });

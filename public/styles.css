@@ -260,6 +260,64 @@ body {
 .file-drop span { font-size: .875rem; color: var(--ink-faint); }
 .file-drop:active { border-color: var(--accent); }
 
+.import-filename {
+  margin: -1rem 0 1.25rem;
+  font-size: .9375rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.secondary-action.full { width: 100%; margin-top: .75rem; }
+
+/* reading many files */
+
+.progress {
+  height: .375rem;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width .2s ease-out;
+}
+
+.file-list {
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.file-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .625rem 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: .9375rem;
+}
+
+.file-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.file-state {
+  color: var(--ink-faint);
+  white-space: nowrap;
+  font-size: .875rem;
+}
+
+.file-read .file-state { color: var(--accent); }
+.file-failed .file-state, .file-skipped .file-state { color: var(--gold); }
+
 /* what we understood */
 
 .understood { margin-bottom: 1.5rem; }

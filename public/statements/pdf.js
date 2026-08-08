@@ -14,7 +14,17 @@ let pdfjs = null;
 /** Loaded only when someone actually opens a PDF — it is a large library. */
 async function loadPdfjs() {
   if (pdfjs) return pdfjs;
-  pdfjs = await import(PDFJS_URL);
+
+  try {
+    pdfjs = await import(PDFJS_URL);
+  } catch (error) {
+    throw new StatementFileError(
+      'reader-unavailable',
+      'The statement reader could not load. Check your connection and try again.',
+      error
+    );
+  }
+
   pdfjs.GlobalWorkerOptions.workerSrc = WORKER_URL;
   return pdfjs;
 }
@@ -24,10 +34,14 @@ export const WRONG_PASSWORD = 'wrong-password';
 export const NO_TEXT = 'no-text';
 
 export class StatementFileError extends Error {
-  constructor(kind, message) {
+  constructor(kind, message, cause = null) {
     super(message);
     this.name = 'StatementFileError';
     this.kind = kind;
+    // Kept so a failure can be diagnosed rather than guessed at. An earlier
+    // version threw away the real reason and reported "something went wrong",
+    // which made a broken PDF library look like a broken statement.
+    this.cause = cause;
   }
 }
 
@@ -42,16 +56,18 @@ export async function readPdf(file, password = null, onProgress = null) {
   const library = await loadPdfjs();
   const data = new Uint8Array(await file.arrayBuffer());
 
-  let document;
+  let task;
+  let pdf;
   try {
-    document = await library.getDocument({
+    task = library.getDocument({
       data,
       password: password || undefined,
       // Nothing about this document may reach the network.
       disableAutoFetch: true,
       disableStream: true,
       isEvalSupported: false
-    }).promise;
+    });
+    pdf = await task.promise;
   } catch (error) {
     if (error?.name === 'PasswordException') {
       // 1 means it wants a password; 2 means the one given was wrong.
@@ -62,13 +78,30 @@ export async function readPdf(file, password = null, onProgress = null) {
           : 'This statement is password protected.'
       );
     }
-    throw new StatementFileError('unreadable', 'This file could not be opened as a PDF.');
+
+    // "Setting up fake worker failed" means the reader's own worker file did
+    // not arrive — a connection problem, not a problem with the statement.
+    const detail = String(error?.message || '');
+    if (/fake worker|worker/i.test(detail)) {
+      throw new StatementFileError(
+        'reader-unavailable',
+        'The statement reader could not finish loading. Check your connection and try again.',
+        error
+      );
+    }
+
+    throw new StatementFileError(
+      'unreadable',
+      `This file could not be opened as a PDF${detail ? ` — ${detail}` : ''}.`,
+      error
+    );
   }
 
   const items = [];
+  const pageCount = pdf.numPages;
 
-  for (let number = 1; number <= document.numPages; number++) {
-    const page = await document.getPage(number);
+  for (let number = 1; number <= pageCount; number++) {
+    const page = await pdf.getPage(number);
     const viewport = page.getViewport({ scale: 1 });
     const content = await page.getTextContent();
 
@@ -88,11 +121,19 @@ export async function readPdf(file, password = null, onProgress = null) {
       });
     }
 
-    if (onProgress) onProgress(number, document.numPages);
+    if (onProgress) onProgress(number, pageCount);
     page.cleanup();
   }
 
-  await document.destroy();
+  // Release the file and everything derived from it before doing anything else,
+  // so a household uploading a year of statements does not accumulate them all
+  // in a phone's memory at once.
+  try {
+    if (typeof pdf.destroy === 'function') await pdf.destroy();
+    else if (task && typeof task.destroy === 'function') await task.destroy();
+  } catch {
+    // Failing to tidy up is not a reason to lose a statement we just read.
+  }
 
   if (items.length === 0) {
     throw new StatementFileError(
@@ -101,5 +142,5 @@ export async function readPdf(file, password = null, onProgress = null) {
     );
   }
 
-  return { items, pages: document.numPages };
+  return { items, pages: pageCount };
 }

@@ -1,8 +1,9 @@
 /* The statement screen.
  *
- * Reads a file on the device, then shows the household what was understood and
- * asks them to confirm it before a single figure is kept. Nothing is imported
- * on the strength of our own reading alone.
+ * Reads however many files a household hands over — nine banks, twelve months
+ * each — one at a time on the device, then shows what was understood and waits
+ * to be told to keep it. Nothing is imported on the strength of our own reading
+ * alone, and one unreadable file never stops the rest.
  */
 
 import { formatPaise } from './money.js';
@@ -23,20 +24,27 @@ const ui = {
   file: el('statement-file'),
   passwordStep: el('import-password'),
   passwordMessage: el('import-password-message'),
+  passwordFile: el('import-password-file'),
   password: el('statement-password'),
   passwordSubmit: el('password-submit'),
+  passwordSkip: el('password-skip'),
   working: el('import-working'),
   workingMessage: el('import-working-message'),
+  progressBar: el('import-progress-bar'),
+  progressList: el('import-progress-list'),
   result: el('import-result'),
   errorStep: el('import-error'),
   errorMessage: el('import-error-message'),
   retry: el('import-retry')
 };
 
-let pendingFile = null;
+let jobs = [];
 let onImport = null;
 
-/* ---------- moving between the steps ---------- */
+/* Resolved when the person has answered the password prompt. */
+let awaitingPassword = null;
+
+/* ---------- steps ---------- */
 
 function showStep(step) {
   for (const node of [ui.choose, ui.passwordStep, ui.working, ui.result, ui.errorStep]) {
@@ -45,7 +53,7 @@ function showStep(step) {
 }
 
 function open() {
-  pendingFile = null;
+  jobs = [];
   ui.file.value = '';
   ui.password.value = '';
   ui.home.hidden = true;
@@ -55,8 +63,9 @@ function open() {
 }
 
 function close() {
-  // The file and any password it needed go out of memory with it.
-  pendingFile = null;
+  // Files and any passwords they needed go out of memory with them.
+  jobs = [];
+  awaitingPassword = null;
   ui.file.value = '';
   ui.password.value = '';
   ui.screen.hidden = true;
@@ -64,72 +73,141 @@ function close() {
   ui.link.focus();
 }
 
-function showError(message) {
-  ui.errorMessage.textContent = message;
-  showStep(ui.errorStep);
-}
-
-/* ---------- reading ---------- */
+/* ---------- reading, one file at a time ---------- */
 
 function isPdf(file) {
   return file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
 }
 
-async function readFile(file, password = null) {
-  showStep(ui.working);
-  ui.workingMessage.textContent = 'Reading your statement…';
+/** Show the password question and wait for an answer, or for a skip. */
+function askForPassword(job, wrong) {
+  ui.passwordMessage.textContent = wrong
+    ? 'That password did not open it. Try again.'
+    : 'This statement is password protected. Enter the password to open it.';
+  ui.passwordFile.textContent = job.file.name;
+  ui.password.value = '';
+  showStep(ui.passwordStep);
+  ui.password.focus();
 
-  let table;
-
-  if (isPdf(file)) {
-    const { items } = await readPdf(file, password, (page, total) => {
-      ui.workingMessage.textContent = `Reading page ${page} of ${total}…`;
-    });
-    table = toTable(items);
-  } else {
-    table = readDelimited(await file.text());
-  }
-
-  return { table, result: readStatement(table) };
+  return new Promise((resolve) => { awaitingPassword = resolve; });
 }
 
-async function handleFile(file, password = null) {
-  try {
-    const { table, result } = await readFile(file, password);
-    showUnderstanding(table, result);
-  } catch (error) {
-    if (error instanceof StatementFileError) {
-      if (error.kind === NEEDS_PASSWORD || error.kind === WRONG_PASSWORD) {
-        pendingFile = file;
-        ui.passwordMessage.textContent =
-          error.kind === WRONG_PASSWORD
-            ? 'That password did not open the statement. Try again.'
-            : 'This statement is password protected. Enter the password to open it.';
-        ui.password.value = '';
-        showStep(ui.passwordStep);
-        ui.password.focus();
+async function readOne(job) {
+  let password = null;
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      let table;
+
+      if (isPdf(job.file)) {
+        const { items } = await readPdf(job.file, password, (page, total) => {
+          ui.workingMessage.textContent = `Reading ${job.file.name} — page ${page} of ${total}…`;
+        });
+        table = toTable(items);
+      } else {
+        table = readDelimited(await job.file.text());
+      }
+
+      const result = readStatement(table);
+
+      if (result.transactions.length === 0) {
+        job.status = 'failed';
+        job.error = table.columns
+          ? 'No transactions found in this file.'
+          : 'I could not find a transaction table. If this is a scanned or photographed statement, I cannot read it yet.';
         return;
       }
-      showError(error.message);
+
+      job.status = 'read';
+      job.result = result;
+      job.bank = identifyBank(table.preamble);
+      job.ending = findAccountEnding(table.preamble);
+      return;
+    } catch (error) {
+      if (error instanceof StatementFileError &&
+          (error.kind === NEEDS_PASSWORD || error.kind === WRONG_PASSWORD)) {
+        const given = await askForPassword(job, error.kind === WRONG_PASSWORD);
+        showStep(ui.working);
+
+        if (given === null) {
+          job.status = 'skipped';
+          job.error = 'Skipped — password not given.';
+          return;
+        }
+
+        password = given;
+        continue;
+      }
+
+      job.status = 'failed';
+      job.error = error instanceof StatementFileError
+        ? error.message
+        : `Could not read this file — ${String(error?.message || error).slice(0, 140)}`;
       return;
     }
+  }
 
-    showError('Something went wrong reading that file. Try another one.');
+  job.status = 'skipped';
+  job.error = 'Skipped — password not accepted.';
+}
+
+async function readAll(files) {
+  jobs = [...files].map((file) => ({ file, status: 'waiting', result: null, error: null }));
+
+  showStep(ui.working);
+  renderProgress(0);
+
+  for (let index = 0; index < jobs.length; index++) {
+    const job = jobs[index];
+    job.status = 'reading';
+    ui.workingMessage.textContent = jobs.length === 1
+      ? `Reading ${job.file.name}…`
+      : `Reading ${index + 1} of ${jobs.length} — ${job.file.name}`;
+    renderProgress(index);
+
+    await readOne(job);
+    renderProgress(index + 1);
+
+    // Let the phone breathe between files rather than locking the screen.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  showSummary();
+}
+
+function renderProgress(done) {
+  const percent = jobs.length === 0 ? 0 : Math.round((done / jobs.length) * 100);
+  ui.progressBar.style.width = `${percent}%`;
+
+  ui.progressList.replaceChildren();
+  if (jobs.length < 2) return;
+
+  for (const job of jobs) {
+    const item = document.createElement('li');
+    item.className = `file-row file-${job.status}`;
+    const name = document.createElement('span');
+    name.className = 'file-name';
+    name.textContent = job.file.name;
+    const state = document.createElement('span');
+    state.className = 'file-state';
+    state.textContent = {
+      waiting: 'waiting', reading: 'reading…', read: 'read',
+      failed: 'could not read', skipped: 'skipped'
+    }[job.status] || '';
+    item.append(name, state);
+    ui.progressList.appendChild(item);
   }
 }
 
-/* ---------- what we understood ---------- */
+/* ---------- what we understood, across every file ---------- */
 
 function figureRow(label, value) {
   const row = document.createElement('div');
   row.className = 'figure-row';
-
   const term = document.createElement('dt');
   term.textContent = label;
-
   const detail = document.createElement('dd');
   detail.textContent = value;
-
   row.append(term, detail);
   return row;
 }
@@ -141,22 +219,37 @@ function readableDate(iso) {
     .toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function showUnderstanding(table, result) {
-  const { transactions, verification, summary } = result;
+function showSummary() {
+  const read = jobs.filter((job) => job.status === 'read');
+  const broken = jobs.filter((job) => job.status !== 'read');
 
   ui.result.replaceChildren();
 
-  if (transactions.length === 0) {
-    showError(
-      "I couldn't find any transactions in that file. If it's a scanned or " +
-      'photographed statement, I cannot read it yet — a CSV export from your ' +
-      'bank would work.'
-    );
+  if (read.length === 0) {
+    // Say what happened to each one. A single shared message hides the fact
+    // that different files failed for different reasons.
+    ui.errorMessage.textContent = jobs.length === 1
+      ? jobs[0].error
+      : `None of the ${jobs.length} files could be read:\n\n` +
+        jobs.map((job) => `• ${job.file.name} — ${job.error}`).join('\n');
+    ui.errorMessage.style.whiteSpace = 'pre-line';
+    showStep(ui.errorStep);
     return;
   }
 
-  const bank = identifyBank(table.preamble);
-  const ending = findAccountEnding(table.preamble);
+  const all = read.flatMap((job) => job.result.transactions);
+
+  let debits = 0;
+  let credits = 0;
+  let from = null;
+  let to = null;
+
+  for (const transaction of all) {
+    if (transaction.direction === 'credit') credits += transaction.paise;
+    else debits += transaction.paise;
+    if (!from || transaction.date < from) from = transaction.date;
+    if (!to || transaction.date > to) to = transaction.date;
+  }
 
   const heading = document.createElement('h3');
   heading.className = 'import-title';
@@ -164,42 +257,46 @@ function showUnderstanding(table, result) {
 
   const source = document.createElement('p');
   source.className = 'understood-source';
-  source.textContent = ending
-    ? `${bank.name}, account ending ${ending} · ${readableDate(summary.from)} to ${readableDate(summary.to)}`
-    : `${bank.name} · ${readableDate(summary.from)} to ${readableDate(summary.to)}`;
+  const accounts = new Set(read.map((job) => `${job.bank.name}${job.ending ? ` ending ${job.ending}` : ''}`));
+  source.textContent =
+    `${[...accounts].join(' · ')} — ${readableDate(from)} to ${readableDate(to)}`;
 
   const figures = document.createElement('dl');
   figures.className = 'understood';
   figures.append(
-    figureRow('Transactions found', String(summary.count)),
-    figureRow('Money out', formatPaise(summary.debits)),
-    figureRow('Money in', formatPaise(summary.credits))
+    figureRow(read.length === 1 ? 'Statement read' : 'Statements read', String(read.length)),
+    figureRow('Transactions found', String(all.length)),
+    figureRow('Money out', formatPaise(debits)),
+    figureRow('Money in', formatPaise(credits))
   );
-  if (summary.openingPaise !== null) {
-    figures.append(figureRow('Opening balance', formatPaise(summary.openingPaise)));
-  }
-  if (summary.closingPaise !== null) {
-    figures.append(figureRow('Closing balance', formatPaise(summary.closingPaise)));
-  }
 
-  ui.result.append(heading, source, figures, verdictFor(verification));
+  ui.result.append(heading, source, figures);
+
+  if (read.length > 1) ui.result.append(perFileList(read));
+  ui.result.append(overallVerdict(read));
+  if (broken.length > 0) ui.result.append(brokenList(broken));
 
   const confirm = document.createElement('button');
   confirm.type = 'button';
   confirm.className = 'primary-action';
-  confirm.textContent = verification.confident
-    ? `Add these ${summary.count} transactions`
-    : 'Add them anyway';
+  confirm.textContent = `Add these ${all.length} transactions`;
   confirm.addEventListener('click', () => {
-    if (onImport) onImport(transactions, { bank: bank.name, ending });
+    // Everything goes in as one batch, so the household is told once what
+    // happened rather than watching a message flash per file.
+    const batch = read.flatMap((job) =>
+      job.result.transactions.map((transaction) => ({
+        ...transaction,
+        bank: job.bank.name,
+        ending: job.ending
+      }))
+    );
+    if (onImport) onImport(batch);
     close();
   });
 
   const cancel = document.createElement('button');
   cancel.type = 'button';
-  cancel.className = 'secondary-action';
-  cancel.style.width = '100%';
-  cancel.style.marginTop = '.75rem';
+  cancel.className = 'secondary-action full';
   cancel.textContent = 'Not now';
   cancel.addEventListener('click', close);
 
@@ -207,52 +304,108 @@ function showUnderstanding(table, result) {
   showStep(ui.result);
 }
 
-/** Whether the bank's own running balance agreed with what we read. */
-function verdictFor(verification) {
+function perFileList(read) {
+  const list = document.createElement('ul');
+  list.className = 'file-list';
+
+  for (const job of read) {
+    const item = document.createElement('li');
+    item.className = 'file-row';
+
+    const name = document.createElement('span');
+    name.className = 'file-name';
+    name.textContent = `${job.bank.name}${job.ending ? ` ···${job.ending}` : ''}`;
+
+    const detail = document.createElement('span');
+    detail.className = 'file-state';
+    const count = job.result.transactions.length;
+    detail.textContent = job.result.verification.confident
+      ? `${count} · checked`
+      : `${count} · needs a look`;
+
+    item.append(name, detail);
+    list.appendChild(item);
+  }
+
+  return list;
+}
+
+/** Whether every statement agreed with its own running balance. */
+function overallVerdict(read) {
+  const unchecked = read.filter((job) => job.result.verification.reason === 'no-running-balance');
+  const wrong = read.filter((job) => job.result.verification.mismatches.length > 0);
+
   const box = document.createElement('div');
+  const wrapper = document.createElement('div');
   const title = document.createElement('strong');
   const body = document.createElement('span');
 
-  if (verification.confident && verification.checked > 0) {
+  if (wrong.length === 0 && unchecked.length === 0) {
     box.className = 'verdict verdict-good';
+    const checks = read.reduce((sum, job) => sum + job.result.verification.checked, 0);
     title.textContent = 'These figures add up';
     body.textContent =
-      `Every transaction matches the running balance your bank printed, across ` +
-      `${verification.checked} checks. Please still look them over.`;
-    box.append(document.createElement('div'));
-    box.firstChild.append(title, body);
-    return box;
-  }
-
-  box.className = 'verdict verdict-warn';
-
-  if (verification.reason === 'no-running-balance') {
-    title.textContent = 'I could not check these';
-    body.textContent =
-      'This statement has no running balance column, so there is nothing to check ' +
-      'my reading against. Please look through the figures carefully before adding them.';
+      `Every transaction matches the running balance your bank printed, across ${checks} checks. ` +
+      'Please still look them over.';
   } else {
-    title.textContent = 'Some rows did not add up';
-    body.textContent =
-      `${verification.mismatches.length} of ${verification.checked} transactions ` +
-      'disagree with the running balance your bank printed, which means I have ' +
-      'misread something. You can still add them, but please check these first:';
+    box.className = 'verdict verdict-warn';
+    if (wrong.length > 0) {
+      const rows = wrong.reduce((sum, job) => sum + job.result.verification.mismatches.length, 0);
+      title.textContent = 'Some rows did not add up';
+      body.textContent =
+        `${rows} transaction${rows === 1 ? '' : 's'} disagree with the running balance your bank ` +
+        'printed, which means I have misread something. You can still add them, but please check ' +
+        'them first:';
+    } else {
+      title.textContent = 'I could not check these';
+      body.textContent =
+        `${unchecked.length} statement${unchecked.length === 1 ? ' has' : 's have'} no running ` +
+        'balance column, so there is nothing to check my reading against. Please look through the ' +
+        'figures before adding them.';
+    }
   }
 
-  const wrapper = document.createElement('div');
   wrapper.append(title, body);
 
-  if (verification.mismatches.length > 0) {
+  const mismatches = wrong.flatMap((job) =>
+    job.result.verification.mismatches.map((mismatch) => ({ job, mismatch }))
+  );
+
+  if (mismatches.length > 0) {
     const list = document.createElement('ul');
     list.className = 'mismatch-list';
-    for (const mismatch of verification.mismatches.slice(0, 5)) {
+    for (const { job, mismatch } of mismatches.slice(0, 6)) {
       const item = document.createElement('li');
-      item.textContent = `${readableDate(mismatch.date)} — ${mismatch.description || 'transaction'}`;
+      item.textContent =
+        `${job.file.name} — ${readableDate(mismatch.date)} — ${mismatch.description || 'transaction'}`;
       list.appendChild(item);
     }
     wrapper.appendChild(list);
   }
 
+  box.appendChild(wrapper);
+  return box;
+}
+
+function brokenList(broken) {
+  const box = document.createElement('div');
+  box.className = 'verdict verdict-warn';
+
+  const wrapper = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = broken.length === 1
+    ? 'One file could not be read'
+    : `${broken.length} files could not be read`;
+
+  const list = document.createElement('ul');
+  list.className = 'mismatch-list';
+  for (const job of broken) {
+    const item = document.createElement('li');
+    item.textContent = `${job.file.name} — ${job.error}`;
+    list.appendChild(item);
+  }
+
+  wrapper.append(title, list);
   box.appendChild(wrapper);
   return box;
 }
@@ -271,18 +424,23 @@ export function setUpImport(handler) {
   ui.retry.addEventListener('click', () => showStep(ui.choose));
 
   ui.file.addEventListener('change', () => {
-    const file = ui.file.files?.[0];
-    if (file) handleFile(file);
+    const files = ui.file.files;
+    if (files && files.length > 0) readAll(files);
   });
 
-  ui.passwordSubmit.addEventListener('click', () => {
-    if (pendingFile) handleFile(pendingFile, ui.password.value);
-  });
+  const answerPassword = (value) => {
+    const resolve = awaitingPassword;
+    awaitingPassword = null;
+    if (resolve) resolve(value);
+  };
+
+  ui.passwordSubmit.addEventListener('click', () => answerPassword(ui.password.value));
+  ui.passwordSkip.addEventListener('click', () => answerPassword(null));
 
   ui.password.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && pendingFile) {
+    if (event.key === 'Enter') {
       event.preventDefault();
-      handleFile(pendingFile, ui.password.value);
+      answerPassword(ui.password.value);
     }
   });
 }
