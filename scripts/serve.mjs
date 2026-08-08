@@ -38,7 +38,16 @@ createServer(async (request, response) => {
   }
 
   try {
-    const info = await stat(file).catch(() => null);
+    let info = await stat(file).catch(() => null);
+
+    // Cloudflare Pages serves /app as app.html. Match that here, so a link that
+    // works in production is not broken only while developing.
+    if (!info && !extname(file)) {
+      const asPage = `${file}.html`;
+      const pageInfo = await stat(asPage).catch(() => null);
+      if (pageInfo) { file = asPage; info = pageInfo; }
+    }
+
     if (!info || info.isDirectory()) file = join(root, 'index.html');
 
     const body = await readFile(file);

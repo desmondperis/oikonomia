@@ -11,16 +11,18 @@
  * reading broke on a phone.
  */
 
-const CACHE = 'oikonomia-shell-v9';
+const CACHE = 'oikonomia-shell-v10';
 
+/* Pages are cached at the addresses they are actually visited at — Cloudflare
+   serves /app rather than /app.html, and caching the redirect instead of the
+   page would leave the app unopenable offline. */
 const SHELL = [
   './',
-  'index.html',
-  'app.html',
-  'about.html',
-  'privacy.html',
-  'terms.html',
-  'contact.html',
+  'app',
+  'about',
+  'privacy',
+  'terms',
+  'contact',
   'styles.css',
   'app.js',
   'shell.js',
@@ -95,10 +97,9 @@ self.addEventListener('fetch', (event) => {
 
       // Opening the app offline should still show the app.
       if (request.mode === 'navigate') {
-        const wanted = new URL(request.url).pathname.endsWith('app.html')
-          ? 'app.html'
-          : 'index.html';
-        const shell = await caches.match(wanted) || await caches.match('app.html');
+        const path = new URL(request.url).pathname;
+        const wanted = path === '/' || path === '/index.html' ? './' : 'app';
+        const shell = await caches.match(wanted) || await caches.match('app');
         if (shell) return shell;
       }
 

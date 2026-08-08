@@ -68,11 +68,11 @@
     const response = await fetch('/api/auth/session');
     if (response.ok) {
       const session = await response.json();
-      if (session.signedIn) location.replace('/app.html');
+      if (session.signedIn) location.replace('/app');
       else if (!session.configured) {
         const button = document.getElementById('sign-in');
         button.textContent = 'Continue without signing in';
-        button.href = '/app.html';
+        button.href = '/app';
       }
     }
   } catch {

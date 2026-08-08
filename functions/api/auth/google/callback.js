@@ -39,7 +39,7 @@ export async function onRequestGet({ request, env }) {
     const sessionId = await createSession(env.DB, userId);
 
     const headers = new Headers({
-      location: `${originOf(request)}/app.html`,
+      location: `${originOf(request)}/app`,
       'cache-control': 'no-store'
     });
     headers.append('set-cookie', setCookie('oik_session', sessionId, { maxAge: 60 * 24 * 60 * 60, request }));
