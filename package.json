@@ -5,7 +5,11 @@
   "description": "AI-assisted household financial stewardship and budgeting, built for households in India",
   "license": "MIT",
   "scripts": {
-    "dev": "npx --yes serve public --listen 4173",
-    "build": "node scripts/check.mjs"
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/check.mjs",
+    "deploy": "npm run build && wrangler pages deploy public --project-name oikonomia --branch main"
+  },
+  "devDependencies": {
+    "wrangler": "^4.120.0"
   }
 }
