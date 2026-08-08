@@ -33,9 +33,33 @@ const cases = [
   ['2 dosa 120',                        120,  '2 dosa',            'medium'],
   ['3 shirts rs 1500',                 1500,  '3 shirts',          'high'],
 
+  // currency stuck to the number, as phone dictation and Indian receipts write it
+  ['burger 350rs',                      350,  'Burger',            'high'],
+  ['350/- vegetables',                  350,  'Vegetables',        'high'],
+  ['rs1200 groceries',                 1200,  'Groceries',         'high'],
+  ['medicine 89.50rs',                89.50,  'Medicine',          'high'],
+
+  // Hindi — amounts and descriptions, in both Devanagari and Latin digits.
+  // Hindi number words ("तीन सौ") belong with the Hindi version of the app.
+  ['सब्जी ३५० रुपये',                    350,  'सब्जी',              'high'],
+  ['दूध 80 रुपये',                        80,  'दूध',               'high'],
+  ['ऑटो 60 रु',                           60,  'ऑटो',               'high'],
+
   // nothing usable
   ['groceries',                        null,  'Groceries',         'none'],
   ['',                                 null,  '',                  'none']
+];
+
+/* Phrases as the phone actually dictates them — where a spoken word arrives as
+   a digit. These are only corrected for speech, never for typing. */
+const spokenCases = [
+  // phrase                          rupees   note
+  ['8 burgers for 350rs',               350,  'Burgers'],
+  ['8 a burger for 350 rs',             350,  'Burger'],
+  ['4 milk 80 rupees',                   80,  'Milk'],
+  ['2 samosa 40rs',                      40,  'Samosa'],
+  // a genuine quantity must survive when it is not opening the phrase
+  ['bought 3 shirts rs 1500',          1500,  '3 shirts']
 ];
 
 let failed = 0;
@@ -62,9 +86,30 @@ for (const [phrase, rupees, note, confidence] of cases) {
   }
 }
 
+for (const [phrase, rupees, note] of spokenCases) {
+  const result = parseExpense(phrase, { spoken: true });
+  const expectedPaise = Math.round(rupees * 100);
+
+  const problems = [];
+  if (result.paise !== expectedPaise) {
+    problems.push(`amount ${result.paise} (expected ${expectedPaise})`);
+  }
+  if (result.note !== note) {
+    problems.push(`note "${result.note}" (expected "${note}")`);
+  }
+
+  if (problems.length > 0) {
+    failed++;
+    console.error(`  ✗ spoken: "${phrase}"`);
+    for (const problem of problems) console.error(`      ${problem}`);
+  }
+}
+
+const total = cases.length + spokenCases.length;
+
 if (failed > 0) {
-  console.error(`\n${failed} of ${cases.length} spoken phrases were misread.\n`);
+  console.error(`\n${failed} of ${total} phrases were misread.\n`);
   process.exit(1);
 }
 
-console.log(`✓ ${cases.length} spoken phrases read correctly.`);
+console.log(`✓ ${total} phrases read correctly.`);

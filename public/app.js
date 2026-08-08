@@ -44,8 +44,29 @@ const ui = {
   voiceButton: el('voice-button'),
   voiceLabel: el('voice-label'),
   voiceHeard: el('voice-heard'),
-  voiceDivider: el('voice-divider')
+  voiceDivider: el('voice-divider'),
+  voiceLanguage: el('voice-language'),
+  language: el('language')
 };
+
+/* ---------- spoken language ---------- */
+
+const LANGUAGE_KEY = 'oikonomia.language.v1';
+const LANGUAGES = ['en-IN', 'hi-IN'];
+
+function loadLanguage() {
+  try {
+    const saved = localStorage.getItem(LANGUAGE_KEY);
+    if (saved && LANGUAGES.includes(saved)) return saved;
+  } catch { /* storage unavailable */ }
+
+  // Fall back to whatever the phone itself is set to.
+  const device = (navigator.language || '').toLowerCase();
+  if (device.startsWith('hi')) return 'hi-IN';
+  return 'en-IN';
+}
+
+let language = loadLanguage();
 
 /* ---------- storage ---------- */
 
@@ -195,7 +216,7 @@ function stopListening() {
 
 /** Fill the form from what was heard, and say plainly what was understood. */
 function applyHeard(transcript) {
-  const result = parseExpense(transcript);
+  const result = parseExpense(transcript, { spoken: true });
   const spoken = result.heard || transcript;
 
   ui.note.value = result.note;
@@ -231,7 +252,7 @@ function startListening() {
   if (listening) { stopListening(); return; }
 
   recognition = new SpeechRecognition();
-  recognition.lang = 'en-IN';
+  recognition.lang = language;
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   recognition.continuous = false;
@@ -286,6 +307,8 @@ function openSheet() {
   if (voiceSupported()) {
     ui.voiceButton.hidden = false;
     ui.voiceDivider.hidden = false;
+    ui.voiceLanguage.hidden = false;
+    ui.language.value = language;
     setVoiceState('idle', 'Say it instead');
   } else {
     ui.amount.focus();
@@ -358,6 +381,12 @@ ui.cancel.addEventListener('click', closeSheet);
 ui.backdrop.addEventListener('click', closeSheet);
 ui.form.addEventListener('submit', handleSubmit);
 ui.voiceButton.addEventListener('click', startListening);
+
+ui.language.addEventListener('change', () => {
+  language = LANGUAGES.includes(ui.language.value) ? ui.language.value : 'en-IN';
+  try { localStorage.setItem(LANGUAGE_KEY, language); } catch { /* fine */ }
+  stopListening();
+});
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.sheet.hidden) closeSheet();

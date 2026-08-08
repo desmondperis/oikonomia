@@ -24,7 +24,11 @@ const MULTIPLIERS = {
   crore: 10000000, crores: 10000000
 };
 
-const CURRENCY = /^(₹|rs|rs\.|rupee|rupees|inr|bucks)$/;
+const CURRENCY = /^(₹|rs|rs\.|rupee|rupees|inr|bucks|रु|रुपये|रुपए|रुपया)$/;
+
+/* Devanagari digits, so a Hindi dictation of "३५०" reads as 350. Hindi number
+   words are a larger job and belong with the Hindi version of the app. */
+const DEVANAGARI_DIGITS = '०१२३४५६७८९';
 
 /* Words that carry no meaning once the amount is removed. Order matters only in
    that these are stripped from anywhere in the remaining phrase. */
@@ -36,16 +40,32 @@ const FILLER = new Set([
   'add', 'record', 'expense', 'i', 'we', 'my', 'our', 'me', 'us'
 ]);
 
-/** Normalise for matching without losing the original for display. */
+/** Normalise for matching without losing the original for display.
+ *
+ * Phone dictation writes "350rs" when you say "three hundred fifty rupees", and
+ * "350/-" is how the amount is written on half the receipts in India. Both have
+ * to come apart into a number and a currency word before anything else works.
+ */
 function tokenise(text) {
   return String(text)
     .toLowerCase()
+    .replace(/[०-९]/g, (d) => String(DEVANAGARI_DIGITS.indexOf(d)))
     .replace(/[₹]/g, ' ₹ ')
-    .replace(/[^\w.,₹]+/g, ' ')
+    .replace(/(\d)\s*\/-/g, '$1 rs ')                       // 350/-
+    .replace(/(\d)\s*(rs|rupees|rupee|inr)\b/g, '$1 $2 ')   // 350rs
+    .replace(/\b(rs|rupees|rupee|inr)\s*(\d)/g, '$1 $2')    // rs350
+    // \p{M} keeps Devanagari vowel marks attached; without it "सब्जी" loses its
+    // matras and becomes unreadable.
+    .replace(/[^\p{L}\p{M}\p{N}.,₹]+/gu, ' ')
     .trim()
     .split(/\s+/)
     .filter(Boolean);
 }
+
+/* Digits that phone dictation writes when a person said an ordinary word.
+   "ate a burger" becomes "8 a burger"; "for 350" becomes "4 350". Only applied
+   to speech — someone typing "2 dosa 120" means the 2. */
+const SPOKEN_HOMOPHONES = new Set(['8', '4', '2', '1']);
 
 /** "1,250.50" -> 1250.5 ; returns null if not a plain number. */
 function readDigits(token) {
@@ -151,8 +171,17 @@ function chooseAmount(candidates) {
 }
 
 /** What is left once the amount is taken out becomes the description. */
-function buildNote(tokens, amount) {
+function buildNote(tokens, amount, spoken) {
+  // "ate a burger for 350 rs" arrives as "8 a burger for 350 rs". A stray digit
+  // opening a spoken phrase, when the real amount sits elsewhere, is almost
+  // always a misheard word rather than a quantity.
+  const strayLeadingDigit =
+    spoken &&
+    SPOKEN_HOMOPHONES.has(tokens[0]) &&
+    amount && amount.from > 0;
+
   const kept = tokens.filter((token, index) => {
+    if (strayLeadingDigit && index === 0) return false;
     if (amount && index >= amount.from && index <= amount.to) return false;
     if (CURRENCY.test(token)) return false;
     if (FILLER.has(token)) return false;
@@ -173,13 +202,14 @@ function buildNote(tokens, amount) {
  *                'medium' a number spelled out in words
  *                'none'   no amount found; the person must fill it in
  */
-export function parseExpense(text) {
+export function parseExpense(text, options = {}) {
+  const spoken = options.spoken === true;
   const heard = String(text || '').trim();
   const tokens = tokenise(heard);
 
   const candidates = findAmounts(tokens);
   const amount = chooseAmount(candidates);
-  const note = buildNote(tokens, amount);
+  const note = buildNote(tokens, amount, spoken);
 
   if (!amount || amount.value <= 0 || amount.value > 10_000_000) {
     return { paise: null, note, confidence: 'none', heard };
