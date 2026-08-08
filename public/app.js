@@ -12,12 +12,17 @@
 import { parseExpense } from './nlp.js';
 import { formatPaise, readRupees } from './money.js';
 import { setUpImport } from './import.js';
+import {
+  getKey, setKey, hasKey, testConnection,
+  categoriseLocally, categoriseWithAi, merchantOf
+} from './ai.js';
 
 const STORE_KEY = 'oikonomia.entries.v1';
 
 const el = (id) => document.getElementById(id);
 
 const ui = {
+  home: el('home'),
   headlineFigure: el('headline-figure'),
   headlineNote: el('headline-note'),
   list: el('entry-list'),
@@ -40,7 +45,15 @@ const ui = {
   sheetTitle: el('sheet-title'),
   saveButton: el('save-button'),
   deleteButton: el('delete-button'),
-  welcome: el('welcome')
+  welcome: el('welcome'),
+  settingsLink: el('settings-link'),
+  settings: el('settings'),
+  settingsBack: el('settings-back'),
+  settingsLanguage: el('settings-language'),
+  apiKey: el('api-key'),
+  apiSave: el('api-save'),
+  apiRemove: el('api-remove'),
+  apiStatus: el('api-status')
 };
 
 /* ---------- spoken language ---------- */
@@ -181,6 +194,7 @@ function render() {
 
   for (const entry of recent) {
     const item = document.createElement('li');
+    item.className = 'entry-row';
 
     // The whole row is tappable, so a mistake can always be corrected.
     const button = document.createElement('button');
@@ -195,6 +209,13 @@ function render() {
     const left = document.createElement('div');
     left.className = 'entry-note';
     left.textContent = entry.note || 'Expense';
+
+    if (entry.category) {
+      const category = document.createElement('span');
+      category.className = 'entry-category';
+      category.textContent = entry.category;
+      left.appendChild(category);
+    }
 
     const when = document.createElement('span');
     when.className = 'entry-when';
@@ -213,9 +234,47 @@ function render() {
     button.append(left, amount);
     button.addEventListener('click', () => openSheet(entry.id));
 
-    item.appendChild(button);
+    // A visible way out, right where the mistake is. One tap asks, the second
+    // removes — no dialog, and nothing lost by a stray thumb.
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'entry-remove';
+    remove.textContent = '×';
+    remove.setAttribute('aria-label', `Remove ${entry.note || 'this expense'}`);
+    remove.addEventListener('click', (event) => {
+      event.stopPropagation();
+
+      if (remove.dataset.armed !== 'true') {
+        for (const other of ui.list.querySelectorAll('.entry-remove')) {
+          other.dataset.armed = 'false';
+          other.textContent = '×';
+        }
+        remove.dataset.armed = 'true';
+        remove.textContent = 'Remove?';
+        return;
+      }
+
+      removeEntry(entry.id);
+    });
+
+    item.append(button, remove);
     ui.list.appendChild(item);
   }
+}
+
+/** Take an entry out, keeping it in hand long enough to put back on failure. */
+function removeEntry(id) {
+  const before = entries;
+  entries = entries.filter((entry) => entry.id !== id);
+
+  if (!saveEntries(entries)) {
+    entries = before;
+    showToast('Could not save on this device');
+    return;
+  }
+
+  render();
+  showToast('Removed');
 }
 
 /* ---------- speaking an expense ---------- */
@@ -531,6 +590,145 @@ function importTransactions(transactions) {
       ? `${fresh.length} added, ${repeated} already recorded`
       : `${fresh.length} transactions added`
   );
+
+  categoriseEntries({ quiet: true });
+}
+
+/* ---------- sorting spending into categories ---------- */
+
+let sorting = false;
+
+/**
+ * Give every entry a category.
+ *
+ * Ordinary rules first — they handle most Indian merchants for nothing. Only
+ * what is left over, and only the merchant name with the amount and date
+ * stripped away, is ever put to the assistant.
+ */
+async function categoriseEntries({ quiet = false } = {}) {
+  if (sorting) return;
+  sorting = true;
+
+  try {
+    let changed = false;
+
+    for (const entry of entries) {
+      if (entry.category) continue;
+      const local = categoriseLocally(entry.note);
+      if (local) { entry.category = local; changed = true; }
+    }
+
+    if (changed) { saveEntries(entries); render(); }
+
+    const unknown = entries.filter((entry) => !entry.category);
+    if (unknown.length === 0 || !hasKey()) return;
+
+    if (!quiet) showToast(`Sorting ${unknown.length} more…`);
+
+    // One question per distinct merchant, not per transaction.
+    const byMerchant = new Map();
+    for (const entry of unknown) {
+      const merchant = merchantOf(entry.note);
+      if (!merchant) continue;
+      if (!byMerchant.has(merchant)) byMerchant.set(merchant, []);
+      byMerchant.get(merchant).push(entry);
+    }
+
+    const merchants = [...byMerchant.keys()];
+    let sorted = 0;
+
+    for (let start = 0; start < merchants.length; start += 40) {
+      const batch = merchants.slice(start, start + 40);
+      let answers;
+
+      try {
+        answers = await categoriseWithAi(batch);
+      } catch (error) {
+        showToast(String(error.message).slice(0, 60));
+        break;
+      }
+
+      for (const [merchant, category] of Object.entries(answers)) {
+        for (const entry of byMerchant.get(merchant) || []) {
+          entry.category = category;
+          sorted++;
+        }
+      }
+
+      saveEntries(entries);
+      render();
+    }
+
+    if (!quiet) {
+      showToast(sorted > 0 ? `Sorted ${sorted} transactions` : 'Nothing new to sort');
+    }
+  } finally {
+    sorting = false;
+  }
+}
+
+/* ---------- settings ---------- */
+
+function openSettings() {
+  ui.home.hidden = true;
+  ui.settings.hidden = false;
+  ui.settingsLanguage.value = language;
+  ui.apiKey.value = '';
+  showKeyStatus();
+  ui.settingsBack.focus();
+}
+
+function closeSettings() {
+  ui.apiKey.value = '';
+  ui.settings.hidden = true;
+  ui.home.hidden = false;
+  ui.settingsLink.focus();
+}
+
+function showKeyStatus(message = null, kind = null) {
+  if (message) {
+    ui.apiStatus.textContent = message;
+    ui.apiStatus.className = `import-note ${kind || ''}`.trim();
+  } else if (hasKey()) {
+    const key = getKey();
+    ui.apiStatus.textContent = `Key added, ending ${key.slice(-4)}.`;
+    ui.apiStatus.className = 'import-note';
+  } else {
+    ui.apiStatus.textContent = 'No key added yet.';
+    ui.apiStatus.className = 'import-note';
+  }
+
+  ui.apiRemove.hidden = !hasKey();
+}
+
+async function saveAndTestKey() {
+  const typed = ui.apiKey.value.trim();
+
+  if (!typed && !hasKey()) {
+    showKeyStatus('Paste your key above first.', 'status-bad');
+    return;
+  }
+
+  if (typed) setKey(typed);
+
+  ui.apiSave.disabled = true;
+  showKeyStatus('Checking…');
+
+  try {
+    const { model, sample } = await testConnection();
+    const shown = Object.entries(sample).map(([name, category]) => `${name} → ${category}`).join(', ');
+    showKeyStatus(
+      `Working. Using ${model.replace(':free', '')}${shown ? `. It read ${shown}.` : '.'}`,
+      'status-good'
+    );
+    ui.apiKey.value = '';
+    categoriseEntries({ quiet: true });
+  } catch (error) {
+    showKeyStatus(String(error.message).slice(0, 160), 'status-bad');
+  } finally {
+    ui.apiSave.disabled = false;
+    ui.apiRemove.hidden = !hasKey();
+  }
 }
 
 /* ---------- wiring ---------- */
@@ -545,6 +743,24 @@ ui.voiceButton.addEventListener('click', startListening);
 ui.language.addEventListener('change', () => {
   rememberLanguage(ui.language.value);
   stopListening();
+});
+
+ui.settingsLink.addEventListener('click', (event) => {
+  event.preventDefault();
+  openSettings();
+});
+
+ui.settingsBack.addEventListener('click', closeSettings);
+ui.apiSave.addEventListener('click', saveAndTestKey);
+
+ui.apiRemove.addEventListener('click', () => {
+  setKey(null);
+  ui.apiKey.value = '';
+  showKeyStatus('Key removed.', null);
+});
+
+ui.settingsLanguage.addEventListener('change', () => {
+  rememberLanguage(ui.settingsLanguage.value);
 });
 
 document.addEventListener('keydown', (event) => {

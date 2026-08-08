@@ -116,11 +116,34 @@ if (!/--tap:\s*3(\.\d+)?rem/.test(stylesCss)) {
   );
 }
 
-// Nothing may quietly ship a household's data off the device at this stage.
+// The assistant may see a shop name and nothing else. If any of these words
+// appear in ai.js, something about the household's money is being sent.
+const aiJs = readFileSync(join(root, 'public', 'ai.js'), 'utf8');
+const FORBIDDEN_IN_PROMPTS = /(?:^|\W)(paise|balance|\.amount|total|income|budget|salary\b(?!\|))/;
+
+const promptSection = aiJs.slice(aiJs.indexOf('categoriseWithAi'));
+if (FORBIDDEN_IN_PROMPTS.test(promptSection)) {
+  fail(
+    'The assistant only ever sees a shop name',
+    'public/ai.js mentions household figures where it builds its request. Amounts, dates, ' +
+    'balances and totals must never be sent to a model.'
+  );
+}
+
+// Only the household's own key is ever used, and only from their own device.
+if (!/localStorage/.test(aiJs) || /oikonomia\.openrouter\.key[^]*?(?:console\.log|analytics)/.test(aiJs)) {
+  fail(
+    "The household's key stays on the household's device",
+    'public/ai.js no longer keeps the key locally, or logs it.'
+  );
+}
+
+// Authoritative figures are arithmetic, never asked for.
 if (/\bfetch\s*\(/.test(appJs)) {
   fail(
-    'Stage 1 keeps every entry on the device',
-    'public/app.js contains a network call. Household data must not leave the device yet.'
+    'Totals are calculated on the device, never fetched',
+    'public/app.js makes a network call. Every authoritative figure must be arithmetic ' +
+    'done here; anything needing the network belongs in ai.js.'
   );
 }
 

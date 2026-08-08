@@ -39,7 +39,10 @@
     <span aria-hidden="true">+</span> Add expense
   </button>
 
-  <a id="import-link" class="quiet-link" href="#statement">Upload a bank statement</a>
+  <nav class="quiet-links">
+    <a id="import-link" class="quiet-link" href="#statement">Upload a bank statement</a>
+    <a id="settings-link" class="quiet-link" href="#settings">Settings</a>
+  </nav>
 
   <section class="entries" aria-labelledby="entries-heading">
     <h2 id="entries-heading" class="entries-heading">Recent</h2>
@@ -101,6 +104,52 @@
     <p class="import-lead" id="import-error-message"></p>
     <button type="button" id="import-retry" class="primary-action">Try another file</button>
   </div>
+</section>
+
+<section id="settings" class="screen import" hidden aria-labelledby="settings-title">
+  <header class="import-head">
+    <button type="button" id="settings-back" class="back-action" aria-label="Go back">←</button>
+    <h2 id="settings-title" class="import-title">Settings</h2>
+  </header>
+
+  <h3 class="section-heading">Oikonomia's assistant</h3>
+
+  <p class="import-lead">
+    Oikonomia works out your totals by itself. The assistant is what sorts your
+    spending into everyday categories and, later, helps build your budget.
+  </p>
+
+  <p class="import-note">
+    It runs on OpenRouter, using a free model and your own account. Creating a
+    key takes about two minutes and costs nothing.
+  </p>
+
+  <ol class="steps">
+    <li>Open <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> and sign in with Google.</li>
+    <li>Press <strong>Create key</strong>, give it any name, and press Create.</li>
+    <li>Copy the key it shows you — it starts with <code>sk-or-</code>.</li>
+    <li>Paste it below and press Save.</li>
+  </ol>
+
+  <label class="field">
+    <span class="field-label">Your OpenRouter key</span>
+    <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-...">
+  </label>
+
+  <p class="import-note" id="api-status">No key added yet.</p>
+
+  <button type="button" id="api-save" class="primary-action">Save and test</button>
+  <button type="button" id="api-remove" class="secondary-action full" hidden>Remove key</button>
+
+  <h3 class="section-heading">Language</h3>
+  <p class="import-note">Used when you add an expense with your voice.</p>
+  <label class="field">
+    <span class="field-label">I will speak</span>
+    <select id="settings-language">
+      <option value="en-IN">English</option>
+      <option value="hi-IN">हिन्दी</option>
+    </select>
+  </label>
 </section>
 
 <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
