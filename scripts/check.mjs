@@ -49,7 +49,8 @@ for (const path of scripts) {
 /* ---------- the promises ---------- */
 
 const appJs = readFileSync(join(root, 'public', 'app.js'), 'utf8');
-const indexHtml = readFileSync(join(root, 'public', 'index.html'), 'utf8');
+const indexHtml = readFileSync(join(root, 'public', 'app.html'), 'utf8');
+const landingHtml = readFileSync(join(root, 'public', 'index.html'), 'utf8');
 const stylesCss = readFileSync(join(root, 'public', 'styles.css'), 'utf8');
 
 // "The financial engine establishes the truth" — money must be whole numbers.
@@ -61,9 +62,9 @@ if (!/paise/i.test(appJs)) {
 }
 
 // "The home screen shows one number and one button."
-const home = /<main[^>]*>([\s\S]*?)<\/main>/.exec(indexHtml);
+const home = /<section id="home"[^>]*>([\s\S]*?)<\/section>\s*<!-- Plan -->/.exec(indexHtml);
 if (!home) {
-  fail('The home screen shows one number and one button', 'No <main> element found in public/index.html.');
+  fail('The home screen shows one number and one button', 'The home panel was not found in public/app.html.');
 } else {
   const homeButtons = (home[1].match(/<button\b/g) || []).length;
   const homeFigures = (home[1].match(/class="headline-figure"/g) || []).length;
@@ -101,11 +102,40 @@ if (!/\[hidden\]\s*\{[^}]*display:\s*none\s*!important/.test(stylesCss)) {
 }
 
 // The mark is the "O". Nothing else may stand in for it.
-if (/icon\.svg/.test(indexHtml)) {
+if (/icon\.svg/.test(indexHtml) || /icon\.svg/.test(landingHtml)) {
   fail(
     'The app uses the Oikonomia mark',
-    'public/index.html still references icon.svg, which is not the brand mark.'
+    'A page still references icon.svg, which is not the brand mark.'
   );
+}
+
+// Signing in must be offered before anything is asked of anybody.
+if (!/\/api\/auth\/google\/start/.test(landingHtml)) {
+  fail(
+    'The landing page offers a way in',
+    'public/index.html no longer links to sign-in.'
+  );
+}
+
+// Only the three identity permissions are requested at the front door. The
+// declared list is what matters, not what the surrounding prose mentions.
+const googleJs = readFileSync(join(root, 'functions', 'lib', 'google.js'), 'utf8');
+const scopes = /export const SCOPES\s*=\s*\[([^\]]*)\]/.exec(googleJs);
+
+if (!scopes) {
+  fail('Sign-in asks for as little as possible', 'No SCOPES list found in functions/lib/google.js.');
+} else {
+  const asked = scopes[1].match(/'([^']+)'/g)?.map((s) => s.replace(/'/g, '')) || [];
+  const allowed = new Set(['openid', 'email', 'profile']);
+  const extra = asked.filter((scope) => !allowed.has(scope));
+
+  if (extra.length > 0) {
+    fail(
+      'Sign-in asks for as little as possible',
+      `Sign-in requests ${extra.join(', ')}. Only identity belongs at the front door — ` +
+      'Drive access is a separate, later request a household can decline.'
+    );
+  }
 }
 
 // Touch targets stay large enough for a real thumb on a cheap phone.

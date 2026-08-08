@@ -16,8 +16,11 @@ import {
   getKey, setKey, hasKey, testConnection,
   categoriseLocally, categoriseWithAi, merchantOf
 } from './ai.js';
-import { setUpPlan, loadBudget } from './plan.js';
+import { setUpPlan, renderPlan, loadBudget, clearBudget } from './plan.js';
+import { resetImport } from './import.js';
 import { compare } from './budget.js';
+import { setUpShell, showTab, loadSession, renderHousehold } from './shell.js';
+import { setUpAsk, renderAsk } from './ask.js';
 
 const STORE_KEY = 'oikonomia.entries.v1';
 
@@ -49,10 +52,8 @@ const ui = {
   saveButton: el('save-button'),
   deleteButton: el('delete-button'),
   welcome: el('welcome'),
-  settingsLink: el('settings-link'),
-  settings: el('settings'),
-  settingsBack: el('settings-back'),
   settingsLanguage: el('settings-language'),
+  eraseAll: el('erase-all'),
   apiKey: el('api-key'),
   apiSave: el('api-save'),
   apiRemove: el('api-remove'),
@@ -691,20 +692,12 @@ async function categoriseEntries({ quiet = false } = {}) {
 
 /* ---------- settings ---------- */
 
-function openSettings() {
-  ui.home.hidden = true;
-  ui.settings.hidden = false;
+/** Called by the shell when the More tab is opened. */
+function refreshSettings() {
   ui.settingsLanguage.value = language;
   ui.apiKey.value = '';
   showKeyStatus();
-  ui.settingsBack.focus();
-}
-
-function closeSettings() {
-  ui.apiKey.value = '';
-  ui.settings.hidden = true;
-  ui.home.hidden = false;
-  ui.settingsLink.focus();
+  renderHousehold();
 }
 
 function showKeyStatus(message = null, kind = null) {
@@ -767,13 +760,30 @@ ui.language.addEventListener('change', () => {
   stopListening();
 });
 
-ui.settingsLink.addEventListener('click', (event) => {
-  event.preventDefault();
-  openSettings();
-});
-
-ui.settingsBack.addEventListener('click', closeSettings);
 ui.apiSave.addEventListener('click', saveAndTestKey);
+
+/* Erasing everything is deliberate and complete: records, plan, learned
+   categories, the key. Two taps, and then it is genuinely gone. */
+ui.eraseAll.addEventListener('click', () => {
+  if (ui.eraseAll.dataset.armed !== 'true') {
+    ui.eraseAll.dataset.armed = 'true';
+    ui.eraseAll.textContent = 'Tap again to erase everything permanently';
+    return;
+  }
+
+  entries = [];
+  clearBudget();
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('oikonomia.')) localStorage.removeItem(key);
+    }
+  } catch { /* nothing more we can do */ }
+
+  ui.eraseAll.dataset.armed = 'false';
+  ui.eraseAll.textContent = 'Erase everything on this device';
+  render();
+  showToast('Everything erased');
+});
 
 ui.apiRemove.addEventListener('click', () => {
   setKey(null);
@@ -791,10 +801,23 @@ document.addEventListener('keydown', (event) => {
 
 setUpImport(importTransactions);
 setUpPlan({ entries: () => entries, changed: render });
+setUpAsk({ entries: () => entries });
+
+setUpShell({
+  add: () => openSheet(),
+  show: (tab) => {
+    if (tab === 'plan') renderPlan();
+    else if (tab === 'more') refreshSettings();
+    else if (tab === 'ask') renderAsk();
+    else if (tab === 'records') resetImport();
+    else render();
+  }
+});
 
 render();
 askLanguageIfNeeded();
 categoriseEntries({ quiet: true });
+loadSession().then(renderHousehold);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

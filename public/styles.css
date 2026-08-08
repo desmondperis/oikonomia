@@ -52,6 +52,118 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- the app's frame ---------- */
+
+.app-body { padding-bottom: 0; }
+
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: .75rem var(--gutter) calc(.75rem + env(safe-area-inset-top));
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+
+.app-mark { border-radius: .375rem; }
+
+.app-name {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.household-badge {
+  margin-left: auto;
+  padding: .1875rem .5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+}
+
+.app-main {
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 0 var(--gutter) calc(6rem + env(safe-area-inset-bottom));
+  min-height: 60dvh;
+}
+
+.screen-title {
+  margin: 1.25rem 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* the bar along the bottom */
+
+.tab-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 6;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--card);
+  border-top: 1px solid var(--rule);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .125rem;
+  min-height: 3.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-icon { font-size: 1.125rem; line-height: 1; }
+.tab-label { font-size: .6875rem; }
+
+.tab-active { color: var(--accent); }
+
+.tab-add { flex: 0 0 auto; }
+
+.tab-plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 1.75rem;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+
 /* ---------- layout ---------- */
 
 .screen {
@@ -867,6 +979,216 @@ body {
 }
 
 .delete-action[data-confirming="true"] { font-weight: 600; }
+
+/* ---------- the landing page ---------- */
+
+.landing {
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 3rem var(--gutter) calc(3rem + env(safe-area-inset-bottom));
+}
+
+.landing-head { text-align: center; margin-bottom: 2rem; }
+.landing-mark { margin-bottom: 1rem; }
+
+.landing-name {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.landing-greek {
+  margin: .375rem 0 0;
+  font-size: .9375rem;
+  color: var(--ink-faint);
+}
+
+.landing-lead {
+  margin: 0 0 2rem;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.landing-action {
+  text-decoration: none;
+  margin-bottom: .75rem;
+}
+
+.landing-note {
+  margin: 0 0 3rem;
+  font-size: .875rem;
+  text-align: center;
+  color: var(--ink-faint);
+}
+
+.landing-trouble {
+  margin-bottom: 1.25rem;
+  padding: .875rem 1rem;
+  border-radius: .75rem;
+  background: color-mix(in srgb, var(--gold) 20%, transparent);
+  font-size: .9375rem;
+  line-height: 1.55;
+}
+
+.landing-point { margin-bottom: 2rem; }
+
+.landing-point h2 {
+  margin: 0 0 .5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.landing-point p {
+  margin: 0;
+  font-size: .9375rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+
+.landing-loop { margin: 3rem 0; }
+
+.landing-loop h2 {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.landing-foot {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.landing-foot p {
+  margin: 0 0 .75rem;
+  font-size: .8125rem;
+  line-height: 1.6;
+  color: var(--ink-faint);
+}
+
+.landing-foot-name {
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+
+/* ---------- household ---------- */
+
+.household-name { margin: 0 0 1rem; font-size: 1.125rem; font-weight: 600; }
+
+.household-code {
+  display: block;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  border-radius: .875rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  text-align: center;
+}
+
+.household-code-label {
+  display: block;
+  font-size: .8125rem;
+  color: var(--ink-faint);
+  margin-bottom: .375rem;
+}
+
+.household-code strong {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: var(--accent);
+}
+
+.household-code-note {
+  display: block;
+  margin-top: .5rem;
+  font-size: .8125rem;
+  color: var(--ink-faint);
+  line-height: 1.5;
+}
+
+.app-version {
+  margin: 2.5rem 0 0;
+  font-size: .75rem;
+  text-align: center;
+  color: var(--ink-faint);
+  letter-spacing: .04em;
+}
+
+/* ---------- asking ---------- */
+
+.ask-thread {
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+  min-height: 40dvh;
+  margin-bottom: 1rem;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: .75rem .9375rem;
+  border-radius: 1rem;
+  font-size: .9375rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.bubble-you {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-bottom-right-radius: .25rem;
+}
+
+.bubble-oik {
+  align-self: flex-start;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-bottom-left-radius: .25rem;
+}
+
+.bubble-quiet {
+  background: transparent;
+  border: 0;
+  color: var(--ink-faint);
+  font-size: .875rem;
+  padding-top: 0;
+}
+
+.ask-form { display: flex; gap: .5rem; margin-bottom: 1rem; }
+
+.ask-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0 .875rem;
+  border: 1px solid var(--rule);
+  border-radius: .875rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ask-send { width: var(--tap); flex: 0 0 auto; padding: 0; font-size: 1.25rem; }
+
+.ask-suggestions { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+.chip {
+  padding: .5rem .875rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: .875rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ---------- toast ---------- */
 

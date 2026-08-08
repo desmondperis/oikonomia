@@ -3,222 +3,139 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f7f4ee">
-<title>Oikonomia</title>
+<meta name="theme-color" content="#15503c">
+<title>Oikonomia — household money, in ordinary language</title>
+<meta name="description" content="A free household budgeting companion for Indian families. Reads your bank statements on your own phone, builds a plan around what you actually spend, and never sends your finances anywhere.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="landing-body">
 
-<section id="welcome" class="welcome" hidden aria-labelledby="welcome-title">
-  <div class="welcome-inner">
-    <img src="icon-192.png" alt="" width="72" height="72" class="welcome-mark">
-    <h2 id="welcome-title" class="welcome-title">Which language will you speak?</h2>
-    <p class="welcome-note">For adding expenses with your voice. You can change this any time.</p>
-    <div class="welcome-choices">
-      <button type="button" class="welcome-choice" data-language="en-IN">English</button>
-      <button type="button" class="welcome-choice" data-language="hi-IN">हिन्दी</button>
-    </div>
-  </div>
-</section>
+<main class="landing">
 
-<main id="home" class="screen">
-  <header class="masthead">
-    <h1>Oikonomia</h1>
+  <header class="landing-head">
+    <img src="icon-512.png" alt="" width="88" height="88" class="landing-mark">
+    <h1 class="landing-name">Oikonomia</h1>
+    <p class="landing-greek">οἰκονομία — the care of a household</p>
   </header>
 
-  <section class="headline" aria-live="polite">
-    <p class="headline-label" id="headline-label">Spent this month</p>
-    <p class="headline-figure" id="headline-figure">₹0</p>
-    <p class="headline-note" id="headline-note">Nothing recorded yet.</p>
+  <p class="landing-lead">
+    Money is something entrusted to us. Oikonomia helps your household look after
+    it well — in ordinary language, on an ordinary phone.
+  </p>
+
+  <div id="trouble" class="landing-trouble" hidden></div>
+
+  <a id="sign-in" class="primary-action landing-action" href="/api/auth/google/start">
+    Continue with Google
+  </a>
+
+  <p class="landing-note">
+    Free. No subscription, no adverts, and no bank login ever asked for.
+  </p>
+
+  <section class="landing-points">
+    <div class="landing-point">
+      <h2>Your statements never leave your phone</h2>
+      <p>
+        Oikonomia reads your bank statements on your own device — PDF or CSV, from
+        any Indian bank, password-protected or not. The file itself is never sent
+        anywhere, and neither is the password.
+      </p>
+    </div>
+
+    <div class="landing-point">
+      <h2>Figures you can check</h2>
+      <p>
+        Every statement is re-added and checked against the closing balance your
+        bank printed. If anything disagrees, Oikonomia says so instead of handing
+        you numbers that merely look right.
+      </p>
+    </div>
+
+    <div class="landing-point">
+      <h2>A plan built from what you actually spend</h2>
+      <p>
+        Not a rule about what families ought to spend. Rent, groceries, medicine
+        and school fees are protected first; whatever is left is given somewhere
+        useful to go.
+      </p>
+    </div>
+
+    <div class="landing-point">
+      <h2>Never a lecture</h2>
+      <p>
+        Oikonomia will not shame you for debt or for a hard month. Where money is
+        short, it says so plainly — that is a gap in income, not a failure of
+        character.
+      </p>
+    </div>
+
+    <div class="landing-point">
+      <h2>Grounded in stewardship</h2>
+      <p>
+        Biblical principles about provision, planning, debt, contentment and
+        generosity shape how Oikonomia advises — kept clearly apart from modern
+        financial practice, and never presented as commands about amounts.
+      </p>
+    </div>
   </section>
 
-  <button id="add-button" class="primary-action" type="button">
-    <span aria-hidden="true">+</span> Add expense
-  </button>
+  <section class="landing-loop" aria-label="How it works">
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li>Sign in and create your household, or join one with its code.</li>
+      <li>Add what you spend as you go — by typing, or just by saying it.</li>
+      <li>Upload your bank statements whenever it suits you.</li>
+      <li>Oikonomia shows what it understood, and waits for you to agree.</li>
+      <li>Together you make a plan, and it keeps you company through the month.</li>
+    </ol>
+  </section>
 
-  <nav class="quiet-links">
-    <a id="plan-link" class="quiet-link" href="#plan">Your plan</a>
-    <a id="import-link" class="quiet-link" href="#statement">Bank statement</a>
-    <a id="settings-link" class="quiet-link" href="#settings">Settings</a>
-  </nav>
-
-  <section class="entries" aria-labelledby="entries-heading">
-    <h2 id="entries-heading" class="entries-heading">Recent</h2>
-    <ul id="entry-list" class="entry-list"></ul>
-    <p id="entries-empty" class="entries-empty">
-      Anything you add will appear here.
+  <footer class="landing-foot">
+    <p>
+      Oikonomia gives household guidance, not professional financial, tax or
+      investment advice. Figures it reads can be wrong, which is why it shows you
+      where each one came from.
     </p>
-  </section>
+    <p class="landing-foot-name">Oikonomia</p>
+  </footer>
+
 </main>
 
-<section id="import" class="screen import" hidden aria-labelledby="import-title">
-  <header class="import-head">
-    <button type="button" id="import-back" class="back-action" aria-label="Go back">←</button>
-    <h2 id="import-title" class="import-title">Bank statement</h2>
-  </header>
+<script type="module">
+  // A word about what went wrong, if Google sent somebody back without them.
+  const reasons = {
+    cancelled: 'Sign-in was cancelled. Nothing has changed — try again whenever you like.',
+    expired: 'That sign-in took too long and expired. Please try once more.',
+    failed: 'Something went wrong signing in. Please try once more.'
+  };
 
-  <div id="import-choose">
-    <p class="import-lead">
-      Upload your statements and I'll read them for you. You can choose as many
-      as you like at once — every account, every month. They stay on your phone
-      and are never sent anywhere.
-    </p>
+  const trouble = new URL(location.href).searchParams.get('trouble');
+  if (trouble && reasons[trouble]) {
+    const box = document.getElementById('trouble');
+    box.textContent = reasons[trouble];
+    box.hidden = false;
+  }
 
-    <label class="file-drop" for="statement-file">
-      <strong>Choose statements</strong>
-      <span>PDF or CSV, from any Indian bank</span>
-    </label>
-    <input id="statement-file" type="file" accept=".pdf,.csv,.tsv,.txt" multiple hidden>
-  </div>
+  // Somebody already signed in should not be asked to sign in again.
+  try {
+    const response = await fetch('/api/auth/session');
+    if (response.ok) {
+      const session = await response.json();
+      if (session.signedIn) location.replace('/app.html');
+      else if (!session.configured) {
+        const button = document.getElementById('sign-in');
+        button.textContent = 'Continue without signing in';
+        button.href = '/app.html';
+      }
+    }
+  } catch {
+    // Offline, or the sign-in service is not reachable. The button still works.
+  }
+</script>
 
-  <div id="import-password" hidden>
-    <p class="import-lead" id="import-password-message">
-      This statement is password protected. Enter the password to open it.
-    </p>
-    <p class="import-filename" id="import-password-file"></p>
-    <label class="field">
-      <span class="field-label">Password</span>
-      <input id="statement-password" type="password" autocomplete="off" inputmode="text">
-    </label>
-    <p class="import-note">
-      The password is used here on your phone and then forgotten. It is not saved
-      and not sent anywhere.
-    </p>
-    <button type="button" id="password-submit" class="primary-action">Open statement</button>
-    <button type="button" id="password-skip" class="secondary-action full">Skip this one</button>
-  </div>
-
-  <div id="import-working" hidden>
-    <p class="import-lead" id="import-working-message">Reading your statements…</p>
-    <div class="progress" role="progressbar" aria-labelledby="import-working-message">
-      <div id="import-progress-bar" class="progress-bar"></div>
-    </div>
-    <ul id="import-progress-list" class="file-list"></ul>
-  </div>
-
-  <div id="import-result" hidden></div>
-
-  <div id="import-error" hidden>
-    <p class="import-lead" id="import-error-message"></p>
-    <button type="button" id="import-retry" class="primary-action">Try another file</button>
-  </div>
-</section>
-
-<section id="plan" class="screen import" hidden aria-labelledby="plan-title">
-  <header class="import-head">
-    <button type="button" id="plan-back" class="back-action" aria-label="Go back">←</button>
-    <h2 id="plan-title" class="import-title">Your plan</h2>
-  </header>
-  <div id="plan-body"></div>
-</section>
-
-<section id="settings" class="screen import" hidden aria-labelledby="settings-title">
-  <header class="import-head">
-    <button type="button" id="settings-back" class="back-action" aria-label="Go back">←</button>
-    <h2 id="settings-title" class="import-title">Settings</h2>
-  </header>
-
-  <h3 class="section-heading">Oikonomia's assistant</h3>
-
-  <p class="import-lead">
-    Oikonomia works out your totals by itself. The assistant is what sorts your
-    spending into everyday categories and, later, helps build your budget.
-  </p>
-
-  <p class="import-note">
-    It runs on OpenRouter, using a free model and your own account. Creating a
-    key takes about two minutes and costs nothing.
-  </p>
-
-  <ol class="steps">
-    <li>Open <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> and sign in with Google.</li>
-    <li>Press <strong>Create key</strong>, give it any name, and press Create.</li>
-    <li>Copy the key it shows you — it starts with <code>sk-or-</code>.</li>
-    <li>Paste it below and press Save.</li>
-  </ol>
-
-  <label class="field">
-    <span class="field-label">Your OpenRouter key</span>
-    <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-...">
-  </label>
-
-  <p class="import-note" id="api-status">No key added yet.</p>
-
-  <button type="button" id="api-save" class="primary-action">Save and test</button>
-  <button type="button" id="api-remove" class="secondary-action full" hidden>Remove key</button>
-
-  <h3 class="section-heading">Language</h3>
-  <p class="import-note">Used when you add an expense with your voice.</p>
-  <label class="field">
-    <span class="field-label">I will speak</span>
-    <select id="settings-language">
-      <option value="en-IN">English</option>
-      <option value="hi-IN">हिन्दी</option>
-    </select>
-  </label>
-</section>
-
-<div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
-
-<section id="sheet" class="sheet" hidden aria-modal="true" role="dialog" aria-labelledby="sheet-title">
-  <form id="entry-form" novalidate>
-    <h2 id="sheet-title" class="sheet-title">Add expense</h2>
-
-    <button type="button" id="voice-button" class="voice-action" hidden>
-      <span class="voice-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z"/>
-          <path d="M18 11a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V19H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.1A6 6 0 0 0 18 11Z"/>
-        </svg>
-      </span>
-      <span id="voice-label">Say it instead</span>
-    </button>
-
-    <p id="voice-language" class="voice-language" hidden>
-      <label for="language">Speaking in</label>
-      <select id="language" name="language">
-        <option value="en-IN">English</option>
-        <option value="hi-IN">हिन्दी</option>
-      </select>
-    </p>
-
-    <p id="voice-heard" class="voice-heard" hidden></p>
-
-    <p id="voice-divider" class="voice-divider" hidden><span>or type it</span></p>
-
-    <label class="field">
-      <span class="field-label">How much?</span>
-      <div class="amount-input">
-        <span class="amount-prefix" aria-hidden="true">₹</span>
-        <input id="amount" name="amount" type="text" inputmode="decimal"
-               autocomplete="off" placeholder="0" required>
-      </div>
-    </label>
-
-    <label class="field">
-      <span class="field-label">What was it?</span>
-      <input id="note" name="note" type="text" autocomplete="off"
-             placeholder="Milk, cab, school books…">
-    </label>
-
-    <p id="form-error" class="form-error" hidden></p>
-
-    <div class="sheet-actions">
-      <button type="button" id="cancel-button" class="secondary-action">Cancel</button>
-      <button type="submit" id="save-button" class="primary-action">Save</button>
-    </div>
-
-    <button type="button" id="delete-button" class="delete-action" hidden>
-      Remove this expense
-    </button>
-  </form>
-</section>
-
-<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-
-<script type="module" src="app.js"></script>
 </body>
 </html>

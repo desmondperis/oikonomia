@@ -2,7 +2,7 @@
   "name": "Oikonomia",
   "short_name": "Oikonomia",
   "description": "Household money, in ordinary language.",
-  "start_url": "./",
+  "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

@@ -16,10 +16,6 @@ import { readPdf, StatementFileError, NEEDS_PASSWORD, WRONG_PASSWORD } from './s
 const el = (id) => document.getElementById(id);
 
 const ui = {
-  screen: el('import'),
-  home: el('home'),
-  link: el('import-link'),
-  back: el('import-back'),
   choose: el('import-choose'),
   file: el('statement-file'),
   passwordStep: el('import-password'),
@@ -52,26 +48,18 @@ function showStep(step) {
   }
 }
 
-function open() {
-  jobs = [];
-  ui.file.value = '';
-  ui.password.value = '';
-  ui.home.hidden = true;
-  ui.screen.hidden = false;
-  showStep(ui.choose);
-  ui.back.focus();
-}
-
+/** Back to a clean slate, ready for the next upload. */
 function close() {
   // Files and any passwords they needed go out of memory with them.
   jobs = [];
   awaitingPassword = null;
   ui.file.value = '';
   ui.password.value = '';
-  ui.screen.hidden = true;
-  ui.home.hidden = false;
-  ui.link.focus();
+  showStep(ui.choose);
 }
+
+/** Called by the shell each time the statements tab is opened. */
+export const resetImport = close;
 
 /* ---------- reading, one file at a time ---------- */
 
@@ -415,12 +403,6 @@ function brokenList(broken) {
 export function setUpImport(handler) {
   onImport = handler;
 
-  ui.link.addEventListener('click', (event) => {
-    event.preventDefault();
-    open();
-  });
-
-  ui.back.addEventListener('click', close);
   ui.retry.addEventListener('click', () => showStep(ui.choose));
 
   ui.file.addEventListener('change', () => {

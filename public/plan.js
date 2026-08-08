@@ -18,10 +18,6 @@ const STORE = 'oikonomia.budget.v1';
 const el = (id) => document.getElementById(id);
 
 const ui = {
-  home: el('home'),
-  link: el('plan-link'),
-  screen: el('plan'),
-  back: el('plan-back'),
   body: el('plan-body')
 };
 
@@ -289,18 +285,7 @@ function render() {
 export function setUpPlan({ entries, changed }) {
   getEntries = entries;
   onChanged = changed || (() => {});
-
-  ui.link.addEventListener('click', (event) => {
-    event.preventDefault();
-    ui.home.hidden = true;
-    ui.screen.hidden = false;
-    render();
-    ui.back.focus();
-  });
-
-  ui.back.addEventListener('click', () => {
-    ui.screen.hidden = true;
-    ui.home.hidden = false;
-    ui.link.focus();
-  });
 }
+
+/** Called by the shell each time the plan tab is opened. */
+export const renderPlan = render;

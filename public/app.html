@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15503c">
+<title>Oikonomia</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-body">
+
+<section id="welcome" class="welcome" hidden aria-labelledby="welcome-title">
+  <div class="welcome-inner">
+    <img src="icon-192.png" alt="" width="72" height="72" class="welcome-mark">
+    <h2 id="welcome-title" class="welcome-title">Which language will you speak?</h2>
+    <p class="welcome-note">For adding expenses with your voice. You can change this any time.</p>
+    <div class="welcome-choices">
+      <button type="button" class="welcome-choice" data-language="en-IN">English</button>
+      <button type="button" class="welcome-choice" data-language="hi-IN">हिन्दी</button>
+    </div>
+  </div>
+</section>
+
+<header class="app-bar">
+  <img src="icon-192.png" alt="" width="28" height="28" class="app-mark">
+  <span class="app-name">Oikonomia</span>
+  <span id="household-badge" class="household-badge" hidden></span>
+</header>
+
+<main class="app-main">
+
+  <!-- Home -->
+  <section id="home" class="tab-panel" aria-labelledby="home-title">
+    <h2 id="home-title" class="visually-hidden">Home</h2>
+
+    <section class="headline" aria-live="polite">
+      <p class="headline-label" id="headline-label">Spent this month</p>
+      <p class="headline-figure" id="headline-figure">₹0</p>
+      <p class="headline-note" id="headline-note">Nothing recorded yet.</p>
+    </section>
+
+    <button id="add-button" class="primary-action" type="button">
+      <span aria-hidden="true">+</span> Add expense
+    </button>
+
+    <section class="entries" aria-labelledby="entries-heading">
+      <h3 id="entries-heading" class="entries-heading">Recent</h3>
+      <ul id="entry-list" class="entry-list"></ul>
+      <p id="entries-empty" class="entries-empty">
+        Anything you add will appear here.
+      </p>
+    </section>
+  </section>
+
+  <!-- Plan -->
+  <section id="plan" class="tab-panel" hidden aria-labelledby="plan-title">
+    <h2 id="plan-title" class="screen-title">Your plan</h2>
+    <div id="plan-body"></div>
+  </section>
+
+  <!-- Ask -->
+  <section id="ask" class="tab-panel" hidden aria-labelledby="ask-title">
+    <h2 id="ask-title" class="screen-title">Ask Oikonomia</h2>
+    <div id="ask-thread" class="ask-thread" aria-live="polite"></div>
+    <form id="ask-form" class="ask-form">
+      <input id="ask-input" type="text" autocomplete="off"
+             placeholder="How are we doing this month?">
+      <button type="submit" class="primary-action ask-send" aria-label="Ask">→</button>
+    </form>
+    <div id="ask-suggestions" class="ask-suggestions"></div>
+  </section>
+
+  <!-- Records -->
+  <section id="records" class="tab-panel" hidden aria-labelledby="records-title">
+    <h2 id="records-title" class="screen-title">Bank statements</h2>
+
+    <div id="import-choose">
+      <p class="import-lead">
+        Upload your statements and I'll read them for you. You can choose as many
+        as you like at once — every account, every month. They stay on your phone
+        and are never sent anywhere.
+      </p>
+
+      <label class="file-drop" for="statement-file">
+        <strong>Choose statements</strong>
+        <span>PDF or CSV, from any Indian bank</span>
+      </label>
+      <input id="statement-file" type="file" accept=".pdf,.csv,.tsv,.txt" multiple hidden>
+    </div>
+
+    <div id="import-password" hidden>
+      <p class="import-lead" id="import-password-message">
+        This statement is password protected. Enter the password to open it.
+      </p>
+      <p class="import-filename" id="import-password-file"></p>
+      <label class="field">
+        <span class="field-label">Password</span>
+        <input id="statement-password" type="password" autocomplete="off" inputmode="text">
+      </label>
+      <p class="import-note">
+        The password is used here on your phone and then forgotten. It is not saved
+        and not sent anywhere.
+      </p>
+      <button type="button" id="password-submit" class="primary-action">Open statement</button>
+      <button type="button" id="password-skip" class="secondary-action full">Skip this one</button>
+    </div>
+
+    <div id="import-working" hidden>
+      <p class="import-lead" id="import-working-message">Reading your statements…</p>
+      <div class="progress" role="progressbar" aria-labelledby="import-working-message">
+        <div id="import-progress-bar" class="progress-bar"></div>
+      </div>
+      <ul id="import-progress-list" class="file-list"></ul>
+    </div>
+
+    <div id="import-result" hidden></div>
+
+    <div id="import-error" hidden>
+      <p class="import-lead" id="import-error-message"></p>
+      <button type="button" id="import-retry" class="primary-action">Try another file</button>
+    </div>
+  </section>
+
+  <!-- More -->
+  <section id="more" class="tab-panel" hidden aria-labelledby="more-title">
+    <h2 id="more-title" class="screen-title">More</h2>
+
+    <h3 class="section-heading">Your household</h3>
+    <div id="household-body"></div>
+
+    <h3 class="section-heading">Oikonomia's assistant</h3>
+
+    <p class="import-lead">
+      Oikonomia works out your totals by itself. The assistant sorts your spending
+      into everyday categories and answers questions in plain words.
+    </p>
+
+    <p class="import-note">
+      It runs on OpenRouter, using a free model and your own account. Creating a
+      key takes about two minutes and costs nothing.
+    </p>
+
+    <ol class="steps">
+      <li>Open <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> and sign in with Google.</li>
+      <li>Press <strong>Create key</strong>, give it any name, and press Create.</li>
+      <li>Copy the key it shows you — it starts with <code>sk-or-</code>.</li>
+      <li>Paste it below and press Save.</li>
+    </ol>
+
+    <label class="field">
+      <span class="field-label">Your OpenRouter key</span>
+      <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-...">
+    </label>
+
+    <p class="import-note" id="api-status">No key added yet.</p>
+
+    <button type="button" id="api-save" class="primary-action">Save and test</button>
+    <button type="button" id="api-remove" class="secondary-action full" hidden>Remove key</button>
+
+    <h3 class="section-heading">Language</h3>
+    <p class="import-note">Used when you add an expense with your voice.</p>
+    <label class="field">
+      <span class="field-label">I will speak</span>
+      <select id="settings-language">
+        <option value="en-IN">English</option>
+        <option value="hi-IN">हिन्दी</option>
+      </select>
+    </label>
+
+    <h3 class="section-heading">Your data</h3>
+    <p class="import-note">
+      Everything Oikonomia knows about your household is kept on this device.
+      Removing it here removes it completely.
+    </p>
+    <button type="button" id="erase-all" class="secondary-action full">Erase everything on this device</button>
+    <button type="button" id="sign-out" class="secondary-action full" hidden>Sign out</button>
+
+    <p class="app-version">Oikonomia · household stewardship</p>
+  </section>
+
+</main>
+
+<nav class="tab-bar" aria-label="Main">
+  <button type="button" class="tab" data-tab="home" aria-current="page">
+    <span class="tab-icon" aria-hidden="true">◉</span><span class="tab-label">Home</span>
+  </button>
+  <button type="button" class="tab" data-tab="plan">
+    <span class="tab-icon" aria-hidden="true">▤</span><span class="tab-label">Plan</span>
+  </button>
+  <button type="button" class="tab tab-add" data-tab="add" aria-label="Add expense">
+    <span class="tab-plus" aria-hidden="true">+</span>
+  </button>
+  <button type="button" class="tab" data-tab="ask">
+    <span class="tab-icon" aria-hidden="true">✦</span><span class="tab-label">Ask</span>
+  </button>
+  <button type="button" class="tab" data-tab="more">
+    <span class="tab-icon" aria-hidden="true">≡</span><span class="tab-label">More</span>
+  </button>
+</nav>
+
+<div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+
+<section id="sheet" class="sheet" hidden aria-modal="true" role="dialog" aria-labelledby="sheet-title">
+  <form id="entry-form" novalidate>
+    <h2 id="sheet-title" class="sheet-title">Add expense</h2>
+
+    <button type="button" id="voice-button" class="voice-action" hidden>
+      <span class="voice-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z"/>
+          <path d="M18 11a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V19H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.1A6 6 0 0 0 18 11Z"/>
+        </svg>
+      </span>
+      <span id="voice-label">Say it instead</span>
+    </button>
+
+    <p id="voice-language" class="voice-language" hidden>
+      <label for="language">Speaking in</label>
+      <select id="language" name="language">
+        <option value="en-IN">English</option>
+        <option value="hi-IN">हिन्दी</option>
+      </select>
+    </p>
+
+    <p id="voice-heard" class="voice-heard" hidden></p>
+
+    <p id="voice-divider" class="voice-divider" hidden><span>or type it</span></p>
+
+    <label class="field">
+      <span class="field-label">How much?</span>
+      <div class="amount-input">
+        <span class="amount-prefix" aria-hidden="true">₹</span>
+        <input id="amount" name="amount" type="text" inputmode="decimal"
+               autocomplete="off" placeholder="0" required>
+      </div>
+    </label>
+
+    <label class="field">
+      <span class="field-label">What was it?</span>
+      <input id="note" name="note" type="text" autocomplete="off"
+             placeholder="Milk, cab, school books…">
+    </label>
+
+    <p id="form-error" class="form-error" hidden></p>
+
+    <div class="sheet-actions">
+      <button type="button" id="cancel-button" class="secondary-action">Cancel</button>
+      <button type="submit" id="save-button" class="primary-action">Save</button>
+    </div>
+
+    <button type="button" id="delete-button" class="delete-action" hidden>
+      Remove this expense
+    </button>
+  </form>
+</section>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

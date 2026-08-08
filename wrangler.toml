@@ -1,0 +1,10 @@
+name = "oikonomia"
+pages_build_output_dir = "public"
+compatibility_date = "2026-01-01"
+
+# Only the operational layer lives here: who somebody is, and which household
+# they belong to. A household's financial records stay on their own devices.
+[[d1_databases]]
+binding = "DB"
+database_name = "oikonomia"
+database_id = "e85ee790-f850-45d6-9618-69a2d068d7f0"

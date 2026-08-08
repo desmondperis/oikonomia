@@ -11,13 +11,16 @@
  * reading broke on a phone.
  */
 
-const CACHE = 'oikonomia-shell-v7';
+const CACHE = 'oikonomia-shell-v8';
 
 const SHELL = [
   './',
   'index.html',
+  'app.html',
   'styles.css',
   'app.js',
+  'shell.js',
+  'ask.js',
   'nlp.js',
   'money.js',
   'import.js',
@@ -88,7 +91,10 @@ self.addEventListener('fetch', (event) => {
 
       // Opening the app offline should still show the app.
       if (request.mode === 'navigate') {
-        const shell = await caches.match('index.html');
+        const wanted = new URL(request.url).pathname.endsWith('app.html')
+          ? 'app.html'
+          : 'index.html';
+        const shell = await caches.match(wanted) || await caches.match('app.html');
         if (shell) return shell;
       }
 
