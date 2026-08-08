@@ -10,8 +10,9 @@
 
 import { formatPaise, readRupees } from './money.js';
 import { typicalMonth, financialState, monthName, recurringCosts } from './engine.js';
-import { buildBudget, adjustLine, compare } from './budget.js';
+import { buildBudget, buildFromProfile, adjustLine, compare } from './budget.js';
 import { principlesFor, categoryInfo } from './framework.js';
+import { startSurvey, loadProfile } from './survey.js';
 
 const STORE = 'oikonomia.budget.v1';
 
@@ -23,6 +24,9 @@ const ui = {
 
 let getEntries = () => [];
 let onChanged = () => {};
+
+/* True while the household is being asked about itself instead of shown a plan. */
+let asking = false;
 
 /* ---------- keeping the plan ---------- */
 
@@ -71,8 +75,8 @@ function understanding(entries) {
 
   if (typical.monthsUsed === 0) {
     box.append(node('p', 'import-lead',
-      'Nothing to go on yet. Add a few expenses, or upload a bank statement, and ' +
-      'Oikonomia will work out what a normal month looks like for your household.'));
+      'Nothing to go on yet. Oikonomia can learn your household from bank ' +
+      'statements — or you can simply tell it, which takes about two minutes.'));
     return { fragment: box, typical, ready: false };
   }
 
@@ -215,6 +219,16 @@ function render() {
 
   ui.body.replaceChildren();
 
+  if (asking) {
+    startSurvey(ui.body, (profile) => {
+      asking = false;
+      saveBudget(buildFromProfile(profile));
+      onChanged();
+      render();
+    });
+    return;
+  }
+
   if (!budget) {
     const { fragment, ready } = understanding(entries);
     ui.body.append(fragment);
@@ -234,10 +248,33 @@ function render() {
       });
       ui.body.append(make);
     }
+
+    // Statements are one way in, not the only one. A household with none is
+    // not turned away.
+    const tell = node(
+      'button',
+      ready ? 'secondary-action full' : 'primary-action',
+      loadProfile() ? 'Tell Oikonomia about your household again' : 'Tell Oikonomia about your household'
+    );
+    tell.type = 'button';
+    tell.addEventListener('click', () => { asking = true; render(); });
+    ui.body.append(tell);
+
+    if (!ready) {
+      ui.body.append(node('p', 'import-note',
+        'Eleven short questions about what comes in and what must go out. Skip any that ' +
+        'do not apply. Nothing is estimated for you.'));
+    }
     return;
   }
 
   ui.body.append(node('h3', 'import-title', `Your plan for ${monthName(budget.month)}`));
+
+  if (budget.fromProfile) {
+    ui.body.append(node('p', 'understood-source',
+      'Built from what you told Oikonomia about your household. As you record what you ' +
+      'actually spend, it will learn the difference and offer to adjust.'));
+  }
 
   const { list, comparison } = planLines(budget, entries);
 

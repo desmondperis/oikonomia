@@ -585,6 +585,22 @@ body {
 
 .muted { color: var(--ink-faint); font-weight: 400; }
 
+/* one question at a time */
+
+.survey-ask {
+  margin: 1.25rem 0 .5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.survey-help {
+  margin: 0 0 1.5rem;
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
 /* a principle, offered rather than preached */
 
 .principle {

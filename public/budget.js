@@ -142,6 +142,116 @@ export function buildBudget(entries, options = {}) {
   };
 }
 
+/* ---------- a plan for a household with no statements ---------- */
+
+/**
+ * Build a plan from what a household tells us directly.
+ *
+ * Plenty of households cannot produce a year of PDFs — the statements are
+ * posted, or scanned, or there is no net banking at all. Their money is no less
+ * worth planning, so everything the engine would have worked out from records
+ * is instead asked for plainly, once.
+ *
+ * Every figure here comes from the household. Nothing is estimated on their
+ * behalf, because a budget containing a number nobody said is a budget nobody
+ * will trust.
+ */
+export function buildFromProfile(profile, options = {}) {
+  const now = options.now || Date.now();
+  const income = Number(profile.incomePaise) || 0;
+
+  const lines = [];
+
+  for (const stated of profile.commitments || []) {
+    const paise = Number(stated.paise) || 0;
+    if (paise <= 0) continue;
+
+    const id = stated.category || 'Other';
+    const info = categoryInfo(id);
+    const existing = lines.find((line) => line.id === id);
+
+    if (existing) {
+      existing.plannedPaise += paise;
+      continue;
+    }
+
+    lines.push({
+      id,
+      priority: info.priority,
+      need: info.need,
+      fixed: stated.everyMonth !== false && info.fixed,
+      typicalPaise: paise,
+      plannedPaise: paise,
+      basis: stated.everyMonth === false
+        ? 'What you told us this comes to, month to month.'
+        : 'What you told us you pay every month.'
+    });
+  }
+
+  const rankOf = (line) =>
+    PRIORITIES.findIndex((priority) => priority.id === line.priority) + 1 || 99;
+  lines.sort((a, b) => rankOf(a) - rankOf(b) || b.plannedPaise - a.plannedPaise);
+
+  const planned = () => lines.reduce((sum, line) => sum + line.plannedPaise, 0);
+  const notes = [];
+
+  const shortfall = planned() - income;
+
+  if (income > 0 && shortfall > 0) {
+    notes.push({
+      kind: 'shortfall',
+      paise: shortfall,
+      text: 'What you have told us adds up to more than comes in. That is worth ' +
+        'looking at together, and it is a gap in income rather than a lapse in discipline.'
+    });
+  }
+
+  let leftOver = income - planned();
+
+  if (income > 0 && leftOver > 0) {
+    // Essentials as stated, so the cushion target is grounded in their figures.
+    const essentials = lines
+      .filter((line) => isEssential(line.id))
+      .reduce((sum, line) => sum + line.plannedPaise, 0);
+
+    const bufferGap = Math.max(0, essentials * BUFFER_TARGET_MONTHS - (Number(profile.savedPaise) || 0));
+    const toBuffer = bufferGap > 0 ? Math.min(leftOver, Math.round(leftOver * 0.6)) : 0;
+    const toSaving = leftOver - toBuffer;
+
+    if (toBuffer > 0) {
+      addTo(lines, 'Savings and investing', toBuffer,
+        'Building a cushion, so an unexpected cost does not become a loan.');
+    }
+    if (toSaving > 0) {
+      addTo(lines, 'Savings and investing', toSaving,
+        'Set aside towards what you are working towards.');
+    }
+
+    leftOver = 0;
+  }
+
+  return {
+    month: nextMonthKey(now),
+    incomePaise: income,
+    lines,
+    notes,
+    plannedPaise: planned(),
+    unallocatedPaise: Math.max(0, income - planned()),
+    basedOnMonths: 0,
+    fromProfile: true,
+    state: {
+      standing: income === 0 ? 'unknown' : shortfall > 0 ? 'fragile' : 'stabilising',
+      essentialsAtRisk: shortfall > 0,
+      hasDebt: lines.some((line) => line.id === 'Loan payment'),
+      hasIrregularCosts: (profile.commitments || []).some((item) => item.everyMonth === false),
+      bufferMonths: 0,
+      lifestyleRising: false,
+      givesRegularly: lines.some((line) => line.id === 'Giving'),
+      incomeTooLow: income > 0 && shortfall > 0
+    }
+  };
+}
+
 function addTo(lines, id, paise, why) {
   const existing = lines.find((line) => line.id === id);
   if (existing) {

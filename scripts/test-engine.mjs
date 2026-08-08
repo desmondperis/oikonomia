@@ -8,7 +8,7 @@
 import {
   typicalMonth, recurringCosts, findTransfers, trend, financialState, thisMonth
 } from '../public/engine.js';
-import { buildBudget, adjustLine, compare, review } from '../public/budget.js';
+import { buildBudget, buildFromProfile, adjustLine, compare, review } from '../public/budget.js';
 
 let failed = 0;
 let checks = 0;
@@ -237,6 +237,69 @@ const household = [
 
   const summary = review(budget, household, NOW);
   check('the review leads with what went well', summary.wentWell.length > 0, true);
+}
+
+/* ---------- a household with no statements at all ---------- */
+
+{
+  const profile = {
+    incomePaise: rupees(30000),
+    savedPaise: rupees(5000),
+    commitments: [
+      { category: 'Rent',         paise: rupees(7000),  everyMonth: true },
+      { category: 'Groceries',    paise: rupees(9000),  everyMonth: true },
+      { category: 'Bills',        paise: rupees(1800),  everyMonth: true },
+      { category: 'Transport',    paise: rupees(2500),  everyMonth: true },
+      { category: 'Education',    paise: rupees(2000),  everyMonth: true },
+      { category: 'Loan payment', paise: rupees(3000),  everyMonth: true }
+    ]
+  };
+
+  const budget = buildFromProfile(profile, { now: NOW });
+
+  check('a plan is made without any statement', budget.lines.length > 0, true);
+  check('it is marked as coming from what they said', budget.fromProfile, true);
+  check('income is what they said', budget.incomePaise, rupees(30000));
+
+  const stated = 7000 + 9000 + 1800 + 2500 + 2000 + 3000;
+  check('nothing is invented on their behalf',
+    budget.lines
+      .filter((line) => line.id !== 'Savings and investing')
+      .reduce((sum, line) => sum + line.plannedPaise, 0),
+    rupees(stated));
+
+  check('what is left is given somewhere to go', budget.unallocatedPaise, 0);
+
+  // Within a band the largest commitment leads; what matters is that nothing
+  // optional is listed above something that must be paid.
+  const firstFlexible = budget.lines.findIndex((line) => line.priority === 'flexible');
+  const lastEssential = budget.lines.map((line) => line.priority)
+    .lastIndexOf('essentials');
+  check('nothing optional is listed above something that must be paid',
+    firstFlexible === -1 || firstFlexible > lastEssential, true);
+
+  const savings = budget.lines.find((line) => line.id === 'Savings and investing');
+  check('the remainder becomes a cushion', savings.plannedPaise, rupees(30000 - stated));
+}
+
+{
+  // Told more going out than coming in: say so, do not quietly trim.
+  const tight = {
+    incomePaise: rupees(12000),
+    commitments: [
+      { category: 'Rent',      paise: rupees(7000), everyMonth: true },
+      { category: 'Groceries', paise: rupees(8000), everyMonth: true }
+    ]
+  };
+
+  const budget = buildFromProfile(tight, { now: NOW });
+
+  check('the shortfall is stated plainly', budget.notes.some((note) => note.kind === 'shortfall'), true);
+  check('rent is not cut to make it balance',
+    budget.lines.find((line) => line.id === 'Rent').plannedPaise, rupees(7000));
+  check('nor are groceries',
+    budget.lines.find((line) => line.id === 'Groceries').plannedPaise, rupees(8000));
+  check('and it is named as an income gap', budget.state.incomeTooLow, true);
 }
 
 /* ---------- an empty household invents nothing ---------- */
