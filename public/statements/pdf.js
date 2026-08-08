@@ -52,7 +52,7 @@ export class StatementFileError extends Error {
  * person can actually do something about: a password, and a scanned page with
  * no text in it at all.
  */
-export async function readPdf(file, password = null, onProgress = null) {
+export async function openPdf(file, password = null) {
   const library = await loadPdfjs();
   const data = new Uint8Array(await file.arrayBuffer());
 
@@ -97,6 +97,25 @@ export async function readPdf(file, password = null, onProgress = null) {
     );
   }
 
+  return pdf;
+}
+
+/** Release the document and everything derived from it. */
+export async function closePdf(pdf) {
+  try {
+    if (pdf && typeof pdf.destroy === 'function') await pdf.destroy();
+  } catch {
+    // Failing to tidy up is not a reason to lose a statement we just read.
+  }
+}
+
+/**
+ * Pull the positioned scraps of text out of an open document.
+ *
+ * Returns an empty list for a scanned page, which is not a failure — it is the
+ * signal to try reading it as a picture instead.
+ */
+export async function extractText(pdf, onProgress = null) {
   const items = [];
   const pageCount = pdf.numPages;
 
@@ -125,22 +144,29 @@ export async function readPdf(file, password = null, onProgress = null) {
     page.cleanup();
   }
 
-  // Release the file and everything derived from it before doing anything else,
-  // so a household uploading a year of statements does not accumulate them all
-  // in a phone's memory at once.
-  try {
-    if (typeof pdf.destroy === 'function') await pdf.destroy();
-    else if (task && typeof task.destroy === 'function') await task.destroy();
-  } catch {
-    // Failing to tidy up is not a reason to lose a statement we just read.
-  }
-
-  if (items.length === 0) {
-    throw new StatementFileError(
-      NO_TEXT,
-      'This looks like a scanned or photographed statement. There is no text in it to read.'
-    );
-  }
-
   return { items, pages: pageCount };
+}
+
+/**
+ * Open a PDF, read its text, and close it again.
+ *
+ * Kept for callers that do not want to fall back to reading a scan.
+ */
+export async function readPdf(file, password = null, onProgress = null) {
+  const pdf = await openPdf(file, password);
+
+  try {
+    const result = await extractText(pdf, onProgress);
+
+    if (result.items.length === 0) {
+      throw new StatementFileError(
+        NO_TEXT,
+        'This looks like a scanned or photographed statement. There is no text in it to read.'
+      );
+    }
+
+    return result;
+  } finally {
+    await closePdf(pdf);
+  }
 }

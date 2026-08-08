@@ -11,7 +11,7 @@
  * reading broke on a phone.
  */
 
-const CACHE = 'oikonomia-shell-v11';
+const CACHE = 'oikonomia-shell-v12';
 
 /* Pages are cached at the addresses they are actually visited at — Cloudflare
    serves /app rather than /app.html, and caching the redirect instead of the
@@ -42,6 +42,7 @@ const SHELL = [
   'statements/statement.js',
   'statements/banks.js',
   'statements/pdf.js',
+  'statements/ocr.js',
   'manifest.webmanifest',
   'icon-192.png',
   'icon-512.png'
@@ -49,7 +50,11 @@ const SHELL = [
 
 /* The PDF reader is over a megabyte, so it is fetched after the app is already
    usable rather than holding up the first load. Being cached before anyone
-   uploads a statement is what makes reading one work on a weak connection. */
+   uploads a statement is what makes reading one work on a weak connection.
+
+   The scanned-page reader is six megabytes and most households will never need
+   it, so it is deliberately not fetched here. It is cached the first time
+   somebody opens a statement that turns out to be a picture. */
 const HEAVY = [
   'vendor/pdf.min.mjs',
   'vendor/pdf.worker.min.mjs'

@@ -11,7 +11,11 @@ import { readDelimited } from './statements/csv.js';
 import { toTable } from './statements/table.js';
 import { readStatement } from './statements/statement.js';
 import { identifyBank, findAccountEnding } from './statements/banks.js';
-import { readPdf, StatementFileError, NEEDS_PASSWORD, WRONG_PASSWORD } from './statements/pdf.js';
+import {
+  openPdf, extractText, closePdf,
+  StatementFileError, NEEDS_PASSWORD, WRONG_PASSWORD
+} from './statements/pdf.js';
+import { readScannedPdf, releaseReader, ScanTooSlow } from './statements/ocr.js';
 
 const el = (id) => document.getElementById(id);
 
@@ -88,10 +92,29 @@ async function readOne(job) {
       let table;
 
       if (isPdf(job.file)) {
-        const { items } = await readPdf(job.file, password, (page, total) => {
-          ui.workingMessage.textContent = `Reading ${job.file.name} — page ${page} of ${total}…`;
-        });
-        table = toTable(items);
+        const pdf = await openPdf(job.file, password);
+
+        try {
+          let { items } = await extractText(pdf, (page, total) => {
+            ui.workingMessage.textContent = `Reading ${job.file.name} — page ${page} of ${total}…`;
+          });
+
+          // No text at all means the pages are pictures. Read the pictures.
+          if (items.length === 0) {
+            job.scanned = true;
+            ui.workingMessage.textContent =
+              `${job.file.name} is a scanned statement. Reading it takes longer…`;
+
+            const read = await readScannedPdf(pdf, (message) => {
+              ui.workingMessage.textContent = `${job.file.name} — ${message}`;
+            });
+            items = read.items;
+          }
+
+          table = toTable(items);
+        } finally {
+          await closePdf(pdf);
+        }
       } else {
         table = readDelimited(await job.file.text());
       }
@@ -102,7 +125,10 @@ async function readOne(job) {
         job.status = 'failed';
         job.error = table.columns
           ? 'No transactions found in this file.'
-          : 'I could not find a transaction table. If this is a scanned or photographed statement, I cannot read it yet.';
+          : job.scanned
+            ? 'This scan could not be read clearly enough to find the transaction table. ' +
+              'A sharper scan, or a CSV export from your bank, would work better.'
+            : 'I could not find a transaction table in this file.';
         return;
       }
 
@@ -128,6 +154,15 @@ async function readOne(job) {
       }
 
       job.status = 'failed';
+
+      if (error instanceof ScanTooSlow) {
+        job.error =
+          'This is a scanned statement, and reading it on this phone is too slow to be ' +
+          'worth waiting for. Ask your bank for a CSV or Excel export instead — every ' +
+          'Indian bank offers one from net banking, and it reads instantly.';
+        return;
+      }
+
       job.error = error instanceof StatementFileError
         ? error.message
         : `Could not read this file — ${String(error?.message || error).slice(0, 140)}`;
@@ -139,8 +174,11 @@ async function readOne(job) {
   job.error = 'Skipped — password not accepted.';
 }
 
+let anyScanned = false;
+
 async function readAll(files) {
   jobs = [...files].map((file) => ({ file, status: 'waiting', result: null, error: null }));
+  anyScanned = false;
 
   showStep(ui.working);
   renderProgress(0);
@@ -156,9 +194,14 @@ async function readAll(files) {
     await readOne(job);
     renderProgress(index + 1);
 
+    if (job.scanned) anyScanned = true;
+
     // Let the phone breathe between files rather than locking the screen.
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
+
+  // The scanned-page reader holds a lot of memory. Let it go.
+  if (anyScanned) releaseReader();
 
   showSummary();
 }
@@ -261,6 +304,23 @@ function showSummary() {
   ui.result.append(heading, source, figures);
 
   if (read.length > 1) ui.result.append(perFileList(read));
+
+  if (read.some((job) => job.scanned)) {
+    const note = document.createElement('div');
+    note.className = 'verdict verdict-warn';
+    const wrapper = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = 'One of these was a scan';
+    const body = document.createElement('span');
+    body.textContent =
+      'Reading a picture of a statement is less certain than reading text, so please ' +
+      'look these figures over more carefully than usual. The balance check below is ' +
+      'the best guide to whether it went well.';
+    wrapper.append(title, body);
+    note.append(wrapper);
+    ui.result.append(note);
+  }
+
   ui.result.append(overallVerdict(read));
   if (broken.length > 0) ui.result.append(brokenList(broken));
 
