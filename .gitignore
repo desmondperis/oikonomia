@@ -1,0 +1,32 @@
+node_modules/
+dist/
+build/
+.wrangler/
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+wrangler.toml.local
+.dev.vars
+
+# Real financial data must never enter this repository
+*.pdf
+*.csv
+*.xls
+*.xlsx
+statements/
+samples/private/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
