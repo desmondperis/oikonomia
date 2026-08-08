@@ -12,6 +12,18 @@
 </head>
 <body>
 
+<section id="welcome" class="welcome" hidden aria-labelledby="welcome-title">
+  <div class="welcome-inner">
+    <img src="icon.svg" alt="" width="56" height="56" class="welcome-mark">
+    <h2 id="welcome-title" class="welcome-title">Which language will you speak?</h2>
+    <p class="welcome-note">For adding expenses with your voice. You can change this any time.</p>
+    <div class="welcome-choices">
+      <button type="button" class="welcome-choice" data-language="en-IN">English</button>
+      <button type="button" class="welcome-choice" data-language="hi-IN">हिन्दी</button>
+    </div>
+  </div>
+</section>
+
 <main id="home" class="screen">
   <header class="masthead">
     <h1>Oikonomia</h1>
@@ -83,8 +95,12 @@
 
     <div class="sheet-actions">
       <button type="button" id="cancel-button" class="secondary-action">Cancel</button>
-      <button type="submit" class="primary-action">Save</button>
+      <button type="submit" id="save-button" class="primary-action">Save</button>
     </div>
+
+    <button type="button" id="delete-button" class="delete-action" hidden>
+      Remove this expense
+    </button>
   </form>
 </section>
 

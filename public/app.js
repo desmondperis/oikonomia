@@ -46,7 +46,11 @@ const ui = {
   voiceHeard: el('voice-heard'),
   voiceDivider: el('voice-divider'),
   voiceLanguage: el('voice-language'),
-  language: el('language')
+  language: el('language'),
+  sheetTitle: el('sheet-title'),
+  saveButton: el('save-button'),
+  deleteButton: el('delete-button'),
+  welcome: el('welcome')
 };
 
 /* ---------- spoken language ---------- */
@@ -54,19 +58,48 @@ const ui = {
 const LANGUAGE_KEY = 'oikonomia.language.v1';
 const LANGUAGES = ['en-IN', 'hi-IN'];
 
-function loadLanguage() {
+/** What the phone itself is set to — the best guess before anyone is asked. */
+function deviceLanguage() {
+  const tags = [navigator.language, ...(navigator.languages || [])];
+  for (const tag of tags) {
+    if (String(tag).toLowerCase().startsWith('hi')) return 'hi-IN';
+  }
+  return 'en-IN';
+}
+
+function savedLanguage() {
   try {
     const saved = localStorage.getItem(LANGUAGE_KEY);
     if (saved && LANGUAGES.includes(saved)) return saved;
   } catch { /* storage unavailable */ }
-
-  // Fall back to whatever the phone itself is set to.
-  const device = (navigator.language || '').toLowerCase();
-  if (device.startsWith('hi')) return 'hi-IN';
-  return 'en-IN';
+  return null;
 }
 
-let language = loadLanguage();
+function rememberLanguage(value) {
+  language = LANGUAGES.includes(value) ? value : 'en-IN';
+  try { localStorage.setItem(LANGUAGE_KEY, language); } catch { /* fine */ }
+}
+
+let language = savedLanguage() || deviceLanguage();
+
+/** Asked once, on first opening. Everything else waits behind it. */
+function askLanguageIfNeeded() {
+  if (savedLanguage()) return;
+
+  ui.welcome.hidden = false;
+
+  for (const choice of ui.welcome.querySelectorAll('[data-language]')) {
+    // Nudge towards the phone's own language without deciding for anyone.
+    if (choice.dataset.language === deviceLanguage()) {
+      choice.style.borderColor = 'var(--accent)';
+    }
+    choice.addEventListener('click', () => {
+      rememberLanguage(choice.dataset.language);
+      ui.welcome.hidden = true;
+      ui.addButton.focus();
+    });
+  }
+}
 
 /* ---------- storage ---------- */
 
@@ -162,7 +195,16 @@ function render() {
 
   for (const entry of recent) {
     const item = document.createElement('li');
-    item.className = 'entry';
+
+    // The whole row is tappable, so a mistake can always be corrected.
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'entry';
+    button.dataset.id = entry.id;
+    button.setAttribute(
+      'aria-label',
+      `Edit ${entry.note || 'expense'}, ${formatPaise(entry.paise)}`
+    );
 
     const left = document.createElement('div');
     left.className = 'entry-note';
@@ -177,7 +219,10 @@ function render() {
     amount.className = 'entry-amount';
     amount.textContent = formatPaise(entry.paise);
 
-    item.append(left, amount);
+    button.append(left, amount);
+    button.addEventListener('click', () => openSheet(entry.id));
+
+    item.appendChild(button);
     ui.list.appendChild(item);
   }
 }
@@ -295,19 +340,42 @@ function startListening() {
 /* ---------- the add sheet ---------- */
 
 let lastFocused = null;
+let editingId = null;
 
-function openSheet() {
+/** Opens blank to add, or filled in to correct something already recorded. */
+function openSheet(id = null) {
   lastFocused = document.activeElement;
+  editingId = id;
+
   ui.error.hidden = true;
   ui.voiceHeard.hidden = true;
   ui.form.reset();
+  resetDeleteButton();
+
+  const existing = id ? entries.find((entry) => entry.id === id) : null;
+
+  if (existing) {
+    ui.sheetTitle.textContent = 'Edit expense';
+    ui.saveButton.textContent = 'Save changes';
+    ui.amount.value = String(existing.paise / 100);
+    ui.note.value = existing.note;
+    ui.deleteButton.hidden = false;
+  } else {
+    ui.sheetTitle.textContent = 'Add expense';
+    ui.saveButton.textContent = 'Save';
+    ui.deleteButton.hidden = true;
+  }
+
   ui.backdrop.hidden = false;
   ui.sheet.hidden = false;
 
-  if (voiceSupported()) {
-    ui.voiceButton.hidden = false;
-    ui.voiceDivider.hidden = false;
-    ui.voiceLanguage.hidden = false;
+  // Correcting something is a typing job, so the microphone stays out of it.
+  const offerVoice = voiceSupported() && !existing;
+  ui.voiceButton.hidden = !offerVoice;
+  ui.voiceDivider.hidden = !offerVoice;
+  ui.voiceLanguage.hidden = !offerVoice;
+
+  if (offerVoice) {
     ui.language.value = language;
     setVoiceState('idle', 'Say it instead');
   } else {
@@ -317,9 +385,46 @@ function openSheet() {
 
 function closeSheet() {
   stopListening();
+  editingId = null;
   ui.sheet.hidden = true;
   ui.backdrop.hidden = true;
+  resetDeleteButton();
   if (lastFocused instanceof HTMLElement) lastFocused.focus();
+}
+
+/* ---------- removing an entry ---------- */
+
+let deleteArmed = false;
+
+function resetDeleteButton() {
+  deleteArmed = false;
+  ui.deleteButton.dataset.confirming = 'false';
+  ui.deleteButton.textContent = 'Remove this expense';
+}
+
+function handleDelete() {
+  // One tap arms it, a second confirms. No dialog to dismiss, no accidents.
+  if (!deleteArmed) {
+    deleteArmed = true;
+    ui.deleteButton.dataset.confirming = 'true';
+    ui.deleteButton.textContent = 'Tap again to remove it';
+    return;
+  }
+
+  const removed = entries.find((entry) => entry.id === editingId);
+  entries = entries.filter((entry) => entry.id !== editingId);
+
+  if (!saveEntries(entries)) {
+    if (removed) entries.unshift(removed);
+    ui.error.textContent = 'Could not save on this device. Please try again.';
+    ui.error.hidden = false;
+    resetDeleteButton();
+    return;
+  }
+
+  closeSheet();
+  render();
+  showToast('Removed');
 }
 
 let toastTimer = null;
@@ -353,38 +458,48 @@ function handleSubmit(event) {
     return;
   }
 
-  const entry = {
-    id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
-    paise,
-    note,
-    at: Date.now()
-  };
+  const before = entries;
 
-  entries.unshift(entry);
+  if (editingId) {
+    entries = entries.map((entry) =>
+      entry.id === editingId ? { ...entry, paise, note } : entry
+    );
+  } else {
+    entries = [
+      {
+        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+        paise,
+        note,
+        at: Date.now()
+      },
+      ...entries
+    ];
+  }
 
   if (!saveEntries(entries)) {
-    entries.shift();
+    entries = before;
     ui.error.textContent = 'Could not save on this device. Please try again.';
     ui.error.hidden = false;
     return;
   }
 
+  const wasEditing = Boolean(editingId);
   closeSheet();
   render();
-  showToast(`${formatPaise(paise)} added`);
+  showToast(wasEditing ? 'Updated' : `${formatPaise(paise)} added`);
 }
 
 /* ---------- wiring ---------- */
 
-ui.addButton.addEventListener('click', openSheet);
+ui.addButton.addEventListener('click', () => openSheet());
 ui.cancel.addEventListener('click', closeSheet);
+ui.deleteButton.addEventListener('click', handleDelete);
 ui.backdrop.addEventListener('click', closeSheet);
 ui.form.addEventListener('submit', handleSubmit);
 ui.voiceButton.addEventListener('click', startListening);
 
 ui.language.addEventListener('change', () => {
-  language = LANGUAGES.includes(ui.language.value) ? ui.language.value : 'en-IN';
-  try { localStorage.setItem(LANGUAGE_KEY, language); } catch { /* fine */ }
+  rememberLanguage(ui.language.value);
   stopListening();
 });
 
@@ -393,6 +508,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 render();
+askLanguageIfNeeded();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
