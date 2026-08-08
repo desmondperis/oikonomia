@@ -1,0 +1,16 @@
+{
+  "name": "Oikonomia",
+  "short_name": "Oikonomia",
+  "description": "Household money, in ordinary language.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f4ee",
+  "theme_color": "#f7f4ee",
+  "icons": [
+    { "src": "icon-64.png",  "sizes": "64x64",   "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

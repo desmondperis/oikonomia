@@ -1,0 +1,292 @@
+/* Oikonomia — calm, plain, and legible on a small cheap phone.
+   One number, one button. Nothing competes with them. */
+
+:root {
+  --paper:      #f7f4ee;
+  --card:       #fffdf9;
+  --ink:        #2b2926;
+  --ink-soft:   #6b665e;
+  --ink-faint:  #9a948a;
+  --rule:       #e5dfd4;
+  --accent:     #4a6b52;
+  --accent-ink: #ffffff;
+  --shadow:     0 1px 2px rgba(43, 41, 38, .06), 0 8px 24px rgba(43, 41, 38, .06);
+
+  --tap: 3.25rem;           /* every touch target is at least this tall */
+  --gutter: 1.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:     #1c1b19;
+    --card:      #262421;
+    --ink:       #f0ece5;
+    --ink-soft:  #a8a29a;
+    --ink-faint: #7a746c;
+    --rule:      #38352f;
+    --accent:    #7fa389;
+    --accent-ink:#14211a;
+    --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- layout ---------- */
+
+.screen {
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 1rem var(--gutter) calc(2rem + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.masthead h1 {
+  margin: .5rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* ---------- the one number ---------- */
+
+.headline {
+  text-align: center;
+  padding: 3rem 0 2.5rem;
+}
+
+.headline-label {
+  margin: 0;
+  font-size: .9375rem;
+  color: var(--ink-soft);
+}
+
+.headline-figure {
+  margin: .375rem 0 0;
+  font-size: clamp(2.75rem, 14vw, 3.75rem);
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.headline-note {
+  margin: .625rem 0 0;
+  font-size: .9375rem;
+  color: var(--ink-faint);
+}
+
+/* ---------- the one button ---------- */
+
+.primary-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: .875rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.primary-action:active { transform: translateY(1px); }
+
+.primary-action span { font-size: 1.375rem; line-height: 1; font-weight: 400; }
+
+.secondary-action {
+  min-height: var(--tap);
+  padding: 0 1.25rem;
+  border: 1px solid var(--rule);
+  border-radius: .875rem;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- recent entries ---------- */
+
+.entries { margin-top: 2.5rem; }
+
+.entries-heading {
+  margin: 0 0 .625rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.entry-list { margin: 0; padding: 0; list-style: none; }
+
+.entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .875rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry-note { min-width: 0; overflow-wrap: anywhere; }
+
+.entry-when {
+  display: block;
+  font-size: .8125rem;
+  color: var(--ink-faint);
+  margin-top: .125rem;
+}
+
+.entry-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.entries-empty {
+  margin: .25rem 0 0;
+  font-size: .9375rem;
+  color: var(--ink-faint);
+}
+
+/* ---------- add sheet ---------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 27, 25, .4);
+  z-index: 10;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 11;
+  background: var(--card);
+  border-radius: 1.25rem 1.25rem 0 0;
+  box-shadow: var(--shadow);
+  padding: 1.5rem var(--gutter) calc(1.5rem + env(safe-area-inset-bottom));
+  max-width: 30rem;
+  margin: 0 auto;
+  animation: rise .18s ease-out;
+}
+
+@keyframes rise {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet { animation: none; }
+}
+
+.sheet-title {
+  margin: 0 0 1.25rem;
+  font-size: 1.1875rem;
+  font-weight: 600;
+}
+
+.field { display: block; margin-bottom: 1.125rem; }
+
+.field-label {
+  display: block;
+  margin-bottom: .375rem;
+  font-size: .9375rem;
+  color: var(--ink-soft);
+}
+
+.field input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 .875rem;
+  border: 1px solid var(--rule);
+  border-radius: .75rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.field input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.amount-input { position: relative; }
+
+.amount-prefix {
+  position: absolute;
+  left: .875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  font-size: 1.375rem;
+  pointer-events: none;
+}
+
+.amount-input input {
+  padding-left: 2.25rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-error {
+  margin: -.5rem 0 1rem;
+  font-size: .9375rem;
+  color: #a4442f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-error { color: #e59a86; }
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .75rem;
+  margin-top: 1.5rem;
+}
+
+/* ---------- toast ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: calc(100vw - 2rem);
+  padding: .75rem 1.125rem;
+  border-radius: .75rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: .9375rem;
+  box-shadow: var(--shadow);
+}

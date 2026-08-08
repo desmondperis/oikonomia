@@ -1,0 +1,11 @@
+{
+  "name": "oikonomia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-assisted household financial stewardship and budgeting, built for households in India",
+  "license": "MIT",
+  "scripts": {
+    "dev": "npx --yes serve public --listen 4173",
+    "build": "node scripts/check.mjs"
+  }
+}

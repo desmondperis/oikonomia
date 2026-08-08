@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ee">
+<title>Oikonomia</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main id="home" class="screen">
+  <header class="masthead">
+    <h1>Oikonomia</h1>
+  </header>
+
+  <section class="headline" aria-live="polite">
+    <p class="headline-label" id="headline-label">Spent this month</p>
+    <p class="headline-figure" id="headline-figure">₹0</p>
+    <p class="headline-note" id="headline-note">Nothing recorded yet.</p>
+  </section>
+
+  <button id="add-button" class="primary-action" type="button">
+    <span aria-hidden="true">+</span> Add expense
+  </button>
+
+  <section class="entries" aria-labelledby="entries-heading">
+    <h2 id="entries-heading" class="entries-heading">Recent</h2>
+    <ul id="entry-list" class="entry-list"></ul>
+    <p id="entries-empty" class="entries-empty">
+      Anything you add will appear here.
+    </p>
+  </section>
+</main>
+
+<div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+
+<section id="sheet" class="sheet" hidden aria-modal="true" role="dialog" aria-labelledby="sheet-title">
+  <form id="entry-form" novalidate>
+    <h2 id="sheet-title" class="sheet-title">Add expense</h2>
+
+    <label class="field">
+      <span class="field-label">How much?</span>
+      <div class="amount-input">
+        <span class="amount-prefix" aria-hidden="true">₹</span>
+        <input id="amount" name="amount" type="text" inputmode="decimal"
+               autocomplete="off" placeholder="0" required>
+      </div>
+    </label>
+
+    <label class="field">
+      <span class="field-label">What was it?</span>
+      <input id="note" name="note" type="text" autocomplete="off"
+             placeholder="Milk, cab, school books…">
+    </label>
+
+    <p id="form-error" class="form-error" hidden></p>
+
+    <div class="sheet-actions">
+      <button type="button" id="cancel-button" class="secondary-action">Cancel</button>
+      <button type="submit" class="primary-action">Save</button>
+    </div>
+  </form>
+</section>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
