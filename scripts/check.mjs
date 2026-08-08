@@ -61,12 +61,24 @@ if (!/paise/i.test(appJs)) {
 }
 
 // "The home screen shows one number and one button."
-const primaryButtons = (indexHtml.match(/class="primary-action"/g) || []).length;
-if (primaryButtons > 2) {
-  fail(
-    'The home screen shows one number and one button',
-    `Found ${primaryButtons} primary actions. The home screen allows one; the add sheet allows one Save.`
-  );
+const home = /<main[^>]*>([\s\S]*?)<\/main>/.exec(indexHtml);
+if (!home) {
+  fail('The home screen shows one number and one button', 'No <main> element found in public/index.html.');
+} else {
+  const homeButtons = (home[1].match(/<button\b/g) || []).length;
+  const homeFigures = (home[1].match(/class="headline-figure"/g) || []).length;
+  if (homeButtons !== 1) {
+    fail(
+      'The home screen shows one number and one button',
+      `The home screen has ${homeButtons} buttons. It is allowed exactly one.`
+    );
+  }
+  if (homeFigures !== 1) {
+    fail(
+      'The home screen shows one number and one button',
+      `The home screen has ${homeFigures} headline figures. It is allowed exactly one.`
+    );
+  }
 }
 
 // "No sliders anywhere in the app."
@@ -93,10 +105,26 @@ if (/\bfetch\s*\(/.test(appJs)) {
   );
 }
 
+/* ---------- the spoken-expense reader must still read ---------- */
+
+const { spawnSync } = await import('node:child_process');
+
+const nlp = spawnSync(process.execPath, [join(root, 'scripts', 'test-nlp.mjs')], {
+  encoding: 'utf8'
+});
+
+if (nlp.status !== 0) {
+  fail(
+    'Spoken expenses are read correctly',
+    (nlp.stderr || nlp.stdout || '').trim()
+  );
+}
+
 /* ---------- report ---------- */
 
 if (failures.length === 0) {
   console.log(`✓ ${scripts.length} scripts parsed, all product promises hold.`);
+  console.log((nlp.stdout || '').trim());
   process.exit(0);
 }
 

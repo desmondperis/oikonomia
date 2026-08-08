@@ -9,7 +9,7 @@
  * never afford that.
  */
 
-'use strict';
+import { parseExpense } from './nlp.js';
 
 const STORE_KEY = 'oikonomia.entries.v1';
 
@@ -40,7 +40,11 @@ const ui = {
   note: el('note'),
   error: el('form-error'),
   cancel: el('cancel-button'),
-  toast: el('toast')
+  toast: el('toast'),
+  voiceButton: el('voice-button'),
+  voiceLabel: el('voice-label'),
+  voiceHeard: el('voice-heard'),
+  voiceDivider: el('voice-divider')
 };
 
 /* ---------- storage ---------- */
@@ -157,6 +161,116 @@ function render() {
   }
 }
 
+/* ---------- speaking an expense ---------- */
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+let recognition = null;
+let listening = false;
+let listenGuard = null;
+
+function voiceSupported() {
+  return SpeechRecognition !== null;
+}
+
+function setVoiceState(state, label) {
+  ui.voiceButton.dataset.state = state;
+  ui.voiceLabel.textContent = label;
+}
+
+function showHeard(html) {
+  ui.voiceHeard.innerHTML = html;
+  ui.voiceHeard.hidden = false;
+}
+
+function stopListening() {
+  listening = false;
+  clearTimeout(listenGuard);
+  setVoiceState('idle', 'Say it instead');
+  if (recognition) {
+    try { recognition.stop(); } catch { /* already stopped */ }
+  }
+}
+
+/** Fill the form from what was heard, and say plainly what was understood. */
+function applyHeard(transcript) {
+  const result = parseExpense(transcript);
+  const spoken = result.heard || transcript;
+
+  ui.note.value = result.note;
+
+  if (result.paise === null) {
+    ui.amount.value = '';
+    showHeard(
+      `Heard “${escapeHtml(spoken)}”. I didn't catch an amount — please type it.`
+    );
+    ui.amount.focus();
+    return;
+  }
+
+  ui.amount.value = String(result.paise / 100);
+
+  const amountText = `<strong>${formatPaise(result.paise)}</strong>`;
+  const noteText = result.note ? ` for <strong>${escapeHtml(result.note)}</strong>` : '';
+
+  if (result.confidence === 'high') {
+    showHeard(`Heard “${escapeHtml(spoken)}” — ${amountText}${noteText}. Check it, then save.`);
+  } else {
+    showHeard(`Heard “${escapeHtml(spoken)}”. I think that's ${amountText}${noteText} — please check before saving.`);
+  }
+}
+
+function escapeHtml(text) {
+  const box = document.createElement('span');
+  box.textContent = text;
+  return box.innerHTML;
+}
+
+function startListening() {
+  if (listening) { stopListening(); return; }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-IN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.onresult = (event) => {
+    const transcript = event.results?.[0]?.[0]?.transcript ?? '';
+    stopListening();
+    if (transcript.trim()) applyHeard(transcript);
+    else showHeard("I didn't hear anything. Try again, or type it below.");
+  };
+
+  recognition.onerror = (event) => {
+    stopListening();
+    const message = {
+      'not-allowed': 'Your phone blocked the microphone. Allow it in your browser settings, or type it below.',
+      'service-not-allowed': 'Your phone blocked the microphone. Allow it in your browser settings, or type it below.',
+      'no-speech': "I didn't hear anything. Try again, or type it below.",
+      'audio-capture': "I couldn't reach the microphone. Type it below instead.",
+      'network': 'Speaking needs a connection. Type it below instead.'
+    }[event.error] || "That didn't work. Type it below instead.";
+    showHeard(message);
+  };
+
+  recognition.onend = () => { if (listening) stopListening(); };
+
+  try {
+    recognition.start();
+    listening = true;
+    setVoiceState('listening', 'Listening… tap to stop');
+    ui.voiceHeard.hidden = true;
+
+    // Some Android builds never fire onend. Never leave it listening forever.
+    listenGuard = setTimeout(stopListening, 12000);
+  } catch {
+    stopListening();
+    showHeard("Couldn't start listening. Type it below instead.");
+  }
+}
+
 /* ---------- the add sheet ---------- */
 
 let lastFocused = null;
@@ -164,13 +278,22 @@ let lastFocused = null;
 function openSheet() {
   lastFocused = document.activeElement;
   ui.error.hidden = true;
+  ui.voiceHeard.hidden = true;
   ui.form.reset();
   ui.backdrop.hidden = false;
   ui.sheet.hidden = false;
-  ui.amount.focus();
+
+  if (voiceSupported()) {
+    ui.voiceButton.hidden = false;
+    ui.voiceDivider.hidden = false;
+    setVoiceState('idle', 'Say it instead');
+  } else {
+    ui.amount.focus();
+  }
 }
 
 function closeSheet() {
+  stopListening();
   ui.sheet.hidden = true;
   ui.backdrop.hidden = true;
   if (lastFocused instanceof HTMLElement) lastFocused.focus();
@@ -188,7 +311,18 @@ function showToast(message) {
 function handleSubmit(event) {
   event.preventDefault();
 
-  const paise = parseAmount(ui.amount.value);
+  let paise = parseAmount(ui.amount.value);
+  let note = ui.note.value.trim();
+
+  // Someone may type the whole thing into the description — "burger 250".
+  if (paise === null && note) {
+    const read = parseExpense(note);
+    if (read.paise !== null) {
+      paise = read.paise;
+      note = read.note;
+    }
+  }
+
   if (paise === null) {
     ui.error.textContent = 'Please enter an amount, like 250.';
     ui.error.hidden = false;
@@ -199,7 +333,7 @@ function handleSubmit(event) {
   const entry = {
     id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
     paise,
-    note: ui.note.value.trim(),
+    note,
     at: Date.now()
   };
 
@@ -223,6 +357,7 @@ ui.addButton.addEventListener('click', openSheet);
 ui.cancel.addEventListener('click', closeSheet);
 ui.backdrop.addEventListener('click', closeSheet);
 ui.form.addEventListener('submit', handleSubmit);
+ui.voiceButton.addEventListener('click', startListening);
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.sheet.hidden) closeSheet();
@@ -237,3 +372,7 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// Exposed only so the checks in scripts/ and the browser console can exercise
+// the same code paths a person would.
+window.__oikonomia = { parseExpense, applyHeard, voiceSupported };

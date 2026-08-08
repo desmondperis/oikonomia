@@ -5,13 +5,14 @@
  * in the device's own storage, never in here.
  */
 
-const CACHE = 'oikonomia-shell-v1';
+const CACHE = 'oikonomia-shell-v2';
 
 const SHELL = [
   './',
   'index.html',
   'styles.css',
   'app.js',
+  'nlp.js',
   'manifest.webmanifest',
   'icon.svg',
   'icon-192.png'

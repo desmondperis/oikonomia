@@ -42,6 +42,20 @@
   <form id="entry-form" novalidate>
     <h2 id="sheet-title" class="sheet-title">Add expense</h2>
 
+    <button type="button" id="voice-button" class="voice-action" hidden>
+      <span class="voice-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z"/>
+          <path d="M18 11a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V19H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.1A6 6 0 0 0 18 11Z"/>
+        </svg>
+      </span>
+      <span id="voice-label">Say it instead</span>
+    </button>
+
+    <p id="voice-heard" class="voice-heard" hidden></p>
+
+    <p id="voice-divider" class="voice-divider" hidden><span>or type it</span></p>
+
     <label class="field">
       <span class="field-label">How much?</span>
       <div class="amount-input">
@@ -68,6 +82,6 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
