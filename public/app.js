@@ -23,6 +23,10 @@ import { setUpShell, showTab, loadSession, renderHousehold } from './shell.js';
 import { setUpAsk, renderAsk } from './ask.js';
 import { financialState } from './engine.js';
 import { principlesFor } from './framework.js';
+import {
+  t, categoryName, applyTo, getLanguage, setLanguage,
+  savedLanguage, suggestedLanguage, LANGUAGES
+} from './i18n.js';
 
 const STORE_KEY = 'oikonomia.entries.v1';
 
@@ -72,34 +76,23 @@ const ui = {
   apiStatus: el('api-status')
 };
 
-/* ---------- spoken language ---------- */
+/* ---------- language ---------- */
 
-const LANGUAGE_KEY = 'oikonomia.language.v1';
-const LANGUAGES = ['en-IN', 'hi-IN'];
-
-/** What the phone itself is set to — the best guess before anyone is asked. */
-function deviceLanguage() {
-  const tags = [navigator.language, ...(navigator.languages || [])];
-  for (const tag of tags) {
-    if (String(tag).toLowerCase().startsWith('hi')) return 'hi-IN';
-  }
-  return 'en-IN';
-}
-
-function savedLanguage() {
-  try {
-    const saved = localStorage.getItem(LANGUAGE_KEY);
-    if (saved && LANGUAGES.includes(saved)) return saved;
-  } catch { /* storage unavailable */ }
-  return null;
-}
-
+/**
+ * Change the language of everything.
+ *
+ * Not only what the microphone listens for — every word on every screen, since
+ * an app that speaks only English serves only the households that do.
+ */
 function rememberLanguage(value) {
-  language = LANGUAGES.includes(value) ? value : 'en-IN';
-  try { localStorage.setItem(LANGUAGE_KEY, language); } catch { /* fine */ }
+  language = setLanguage(value);
+  ui.settingsLanguage.value = language;
+  ui.language.value = language;
+  render();
+  renderHousehold();
 }
 
-let language = savedLanguage() || deviceLanguage();
+let language = getLanguage();
 
 /** Asked once, on first opening. Everything else waits behind it. */
 function askLanguageIfNeeded() {
@@ -109,7 +102,7 @@ function askLanguageIfNeeded() {
 
   for (const choice of ui.welcome.querySelectorAll('[data-language]')) {
     // Nudge towards the phone's own language without deciding for anyone.
-    if (choice.dataset.language === deviceLanguage()) {
+    if (choice.dataset.language === suggestedLanguage()) {
       choice.style.borderColor = 'var(--accent)';
     }
     choice.addEventListener('click', () => {
@@ -186,8 +179,8 @@ function describeWhen(timestamp) {
 
 function greetingFor(date) {
   const hour = date.getHours();
-  const when = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const month = date.toLocaleDateString('en-IN', { month: 'long' });
+  const when = hour < 12 ? t('home.morning') : hour < 17 ? t('home.afternoon') : t('home.evening');
+  const month = date.toLocaleDateString(getLanguage(), { month: 'long' });
   return `${when} · ${month}`;
 }
 
@@ -210,13 +203,13 @@ function renderCategories(comparison) {
     const item = makeNode('li', 'category-item');
 
     const top = makeNode('div', 'category-top');
-    top.append(makeNode('span', 'category-name', row.id));
+    top.append(makeNode('span', 'category-name', categoryName(row.id)));
     top.append(makeNode(
       'span',
       `category-left ${row.standing === 'over' ? 'plan-over' : row.standing === 'quick' ? 'plan-quick' : ''}`.trim(),
       row.remainingPaise >= 0
-        ? `${formatPaise(row.remainingPaise)} left`
-        : `${formatPaise(-row.remainingPaise)} over`
+        ? t('home.left.suffix', { amount: formatPaise(row.remainingPaise) })
+        : t('home.over.suffix', { amount: formatPaise(-row.remainingPaise) })
     ));
 
     const bar = makeNode('div', 'meter meter-small');
@@ -263,32 +256,17 @@ function renderNextStep(entries, budget) {
   ui.dashNext.hidden = true;
 
   if (entries.length === 0) {
-    step(
-      'Oikonomia has nothing to go on yet. Upload a few months of bank statements ' +
-      'and it will work out what a normal month looks like for your household.',
-      'Add a bank statement',
-      () => showTab('records')
-    );
+    step(t('next.noRecords'), t('next.noRecords.do'), () => showTab('records'));
     return;
   }
 
   if (!budget) {
-    step(
-      'You have records but no plan yet. A plan turns "what did we spend" into ' +
-      '"what have we still got".',
-      'Make my plan',
-      () => showTab('plan')
-    );
+    step(t('next.noPlan'), t('next.noPlan.do'), () => showTab('plan'));
     return;
   }
 
   if (!hasKey()) {
-    step(
-      'Adding an assistant key lets Oikonomia sort unfamiliar shops and answer ' +
-      'questions in plain words. It is free, and takes about two minutes.',
-      'Set up the assistant',
-      () => showTab('more')
-    );
+    step(t('next.noKey'), t('next.noKey.do'), () => showTab('more'));
   }
 }
 
@@ -318,15 +296,15 @@ function render() {
     const comparison = compare(budget, entries);
     const left = comparison.remainingPaise;
 
-    ui.headlineLabel.textContent = left >= 0 ? 'Left for this month' : 'Over your plan by';
+    ui.headlineLabel.textContent = left >= 0 ? t('home.left') : t('home.over');
     ui.headlineFigure.textContent = formatPaise(Math.abs(left));
 
     const overspent = comparison.rows.filter((row) => row.standing === 'over').length;
     ui.headlineNote.textContent = left < 0
-      ? 'Worth a look at your plan.'
+      ? t('home.checkPlan')
       : overspent > 0
-        ? `${comparison.daysLeft} days left · ${overspent} ${overspent === 1 ? 'category is' : 'categories are'} over`
-        : `${comparison.daysLeft} days left in the month`;
+        ? t('home.daysLeftOver', { n: comparison.daysLeft, c: overspent })
+        : t('home.daysLeft', { n: comparison.daysLeft });
 
     // A bar with today marked on it, so being ahead or behind is obvious
     // without reading a single number.
@@ -341,17 +319,17 @@ function render() {
 
     renderCategories(comparison);
   } else {
-    ui.headlineLabel.textContent = 'Spent this month';
+    ui.headlineLabel.textContent = t('home.spent');
     ui.headlineFigure.textContent = formatPaise(spent);
     ui.headlineMeter.hidden = true;
     ui.dashCategories.hidden = true;
 
     if (thisMonth.length === 0) {
-      ui.headlineNote.textContent = 'Nothing recorded yet.';
+      ui.headlineNote.textContent = t('home.nothing');
     } else {
       const count = thisMonth.length;
       ui.headlineNote.textContent =
-        `${count} ${count === 1 ? 'entry' : 'entries'} so far this month.`;
+        t(count === 1 ? 'home.entry' : 'home.entries', { n: count });
     }
   }
 
@@ -384,7 +362,7 @@ function render() {
     if (entry.category) {
       const category = document.createElement('span');
       category.className = 'entry-category';
-      category.textContent = entry.category;
+      category.textContent = categoryName(entry.category);
       left.appendChild(category);
     }
 
@@ -445,7 +423,7 @@ function removeEntry(id) {
   }
 
   render();
-  showToast('Removed');
+  showToast(t('add.removed'));
 }
 
 /* ---------- speaking an expense ---------- */
@@ -474,7 +452,7 @@ function showHeard(html) {
 function stopListening() {
   listening = false;
   clearTimeout(listenGuard);
-  setVoiceState('idle', 'Say it instead');
+  setVoiceState('idle', t('add.speak'));
   if (recognition) {
     try { recognition.stop(); } catch { /* already stopped */ }
   }
@@ -547,7 +525,7 @@ function startListening() {
   try {
     recognition.start();
     listening = true;
-    setVoiceState('listening', 'Listening… tap to stop');
+    setVoiceState('listening', t('add.listening'));
     ui.voiceHeard.hidden = true;
 
     // Some Android builds never fire onend. Never leave it listening forever.
@@ -576,14 +554,14 @@ function openSheet(id = null) {
   const existing = id ? entries.find((entry) => entry.id === id) : null;
 
   if (existing) {
-    ui.sheetTitle.textContent = 'Edit expense';
-    ui.saveButton.textContent = 'Save changes';
+    ui.sheetTitle.textContent = t('add.edit');
+    ui.saveButton.textContent = t('add.saveChanges');
     ui.amount.value = String(existing.paise / 100);
     ui.note.value = existing.note;
     ui.deleteButton.hidden = false;
   } else {
-    ui.sheetTitle.textContent = 'Add expense';
-    ui.saveButton.textContent = 'Save';
+    ui.sheetTitle.textContent = t('add.title');
+    ui.saveButton.textContent = t('add.save');
     ui.deleteButton.hidden = true;
   }
 
@@ -598,7 +576,7 @@ function openSheet(id = null) {
 
   if (offerVoice) {
     ui.language.value = language;
-    setVoiceState('idle', 'Say it instead');
+    setVoiceState('idle', t('add.speak'));
   } else {
     ui.amount.focus();
   }
@@ -620,7 +598,7 @@ let deleteArmed = false;
 function resetDeleteButton() {
   deleteArmed = false;
   ui.deleteButton.dataset.confirming = 'false';
-  ui.deleteButton.textContent = 'Remove this expense';
+  ui.deleteButton.textContent = t('add.remove');
 }
 
 function handleDelete() {
@@ -628,7 +606,7 @@ function handleDelete() {
   if (!deleteArmed) {
     deleteArmed = true;
     ui.deleteButton.dataset.confirming = 'true';
-    ui.deleteButton.textContent = 'Tap again to remove it';
+    ui.deleteButton.textContent = t('add.removeConfirm');
     return;
   }
 
@@ -637,7 +615,7 @@ function handleDelete() {
 
   if (!saveEntries(entries)) {
     if (removed) entries.unshift(removed);
-    ui.error.textContent = 'Could not save on this device. Please try again.';
+    ui.error.textContent = t('add.cannotSave');
     ui.error.hidden = false;
     resetDeleteButton();
     return;
@@ -645,7 +623,7 @@ function handleDelete() {
 
   closeSheet();
   render();
-  showToast('Removed');
+  showToast(t('add.removed'));
 }
 
 let toastTimer = null;
@@ -673,7 +651,7 @@ function handleSubmit(event) {
   }
 
   if (paise === null) {
-    ui.error.textContent = 'Please enter an amount, like 250.';
+    ui.error.textContent = t('add.needAmount');
     ui.error.hidden = false;
     ui.amount.focus();
     return;
@@ -701,7 +679,7 @@ function handleSubmit(event) {
 
   if (!saveEntries(entries)) {
     entries = before;
-    ui.error.textContent = 'Could not save on this device. Please try again.';
+    ui.error.textContent = t('add.cannotSave');
     ui.error.hidden = false;
     return;
   }
@@ -709,7 +687,7 @@ function handleSubmit(event) {
   const wasEditing = Boolean(editingId);
   closeSheet();
   render();
-  showToast(wasEditing ? 'Updated' : `${formatPaise(paise)} added`);
+  showToast(wasEditing ? t('add.updated') : t('add.added', { amount: formatPaise(paise) }));
 }
 
 /* ---------- taking in a statement ---------- */
@@ -852,9 +830,9 @@ function showKeyStatus(message = null, kind = null) {
   if (message) {
     ui.apiStatus.textContent = message;
   } else if (hasKey()) {
-    ui.apiStatus.textContent = `Connected · key ending ${getKey().slice(-4)}`;
+    ui.apiStatus.textContent = t('more.connected', { last4: getKey().slice(-4) });
   } else {
-    ui.apiStatus.textContent = 'Not set up yet';
+    ui.apiStatus.textContent = t('more.notSetUp');
   }
 
   // The row keeps its own styling; only the tone changes.
@@ -902,8 +880,8 @@ ui.form.addEventListener('submit', handleSubmit);
 ui.voiceButton.addEventListener('click', startListening);
 
 ui.language.addEventListener('change', () => {
-  rememberLanguage(ui.language.value);
   stopListening();
+  rememberLanguage(ui.language.value);
 });
 
 ui.apiSave.addEventListener('click', saveAndTestKey);
@@ -916,8 +894,8 @@ const eraseNote = ui.eraseAll.querySelector('.row-note');
 ui.eraseAll.addEventListener('click', () => {
   if (ui.eraseAll.dataset.armed !== 'true') {
     ui.eraseAll.dataset.armed = 'true';
-    eraseTitle.textContent = 'Tap again to erase everything';
-    eraseNote.textContent = 'This cannot be undone';
+    eraseTitle.textContent = t('more.eraseConfirm');
+    eraseNote.textContent = t('more.eraseWarn');
     return;
   }
 
@@ -930,10 +908,10 @@ ui.eraseAll.addEventListener('click', () => {
   } catch { /* nothing more we can do */ }
 
   ui.eraseAll.dataset.armed = 'false';
-  eraseTitle.textContent = 'Erase everything on this device';
-  eraseNote.textContent = 'Records, plan, categories and key';
+  eraseTitle.textContent = t('more.erase');
+  eraseNote.textContent = t('more.eraseNote');
   render();
-  showToast('Everything erased');
+  showToast(t('more.erased'));
 });
 
 ui.apiRemove.addEventListener('click', () => {
@@ -949,6 +927,9 @@ ui.settingsLanguage.addEventListener('change', () => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.sheet.hidden) closeSheet();
 });
+
+// Put the household's own language on the page before anything is drawn.
+setLanguage(language);
 
 setUpImport(importTransactions);
 setUpPlan({ entries: () => entries, changed: render });

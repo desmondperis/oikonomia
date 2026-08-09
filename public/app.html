@@ -15,8 +15,8 @@
 <section id="welcome" class="welcome" hidden aria-labelledby="welcome-title">
   <div class="welcome-inner">
     <img src="icon-192.png" alt="" width="72" height="72" class="welcome-mark">
-    <h2 id="welcome-title" class="welcome-title">Which language will you speak?</h2>
-    <p class="welcome-note">For adding expenses with your voice. You can change this any time.</p>
+    <h2 id="welcome-title" class="welcome-title" data-i18n="welcome.title">Which language would you like?</h2>
+    <p class="welcome-note" data-i18n="welcome.note">This changes the whole app, and how it listens when you speak. You can change it any time.</p>
     <div class="welcome-choices">
       <button type="button" class="welcome-choice" data-language="en-IN">English</button>
       <button type="button" class="welcome-choice" data-language="hi-IN">हिन्दी</button>
@@ -52,17 +52,17 @@
     <!-- adding, with the month's spending beside it -->
     <div class="add-row">
       <button id="add-button" class="primary-action add-main" type="button">
-        <span aria-hidden="true">+</span> Add expense
+        <span aria-hidden="true">+</span> <span data-i18n="tab.add">Add expense</span>
       </button>
       <div class="add-total">
-        <span class="add-total-label">Spent</span>
+        <span class="add-total-label" data-i18n="home.spentShort">Spent</span>
         <span class="add-total-figure" id="month-spent">₹0</span>
       </div>
     </div>
 
     <!-- how each part of the plan is going -->
     <section id="dash-categories" class="dash-block" hidden>
-      <h3 class="dash-heading">This month</h3>
+      <h3 class="dash-heading" data-i18n="home.thisMonth">This month</h3>
       <ul id="category-list" class="category-list"></ul>
     </section>
 
@@ -71,14 +71,14 @@
 
     <!-- what needs doing next -->
     <section id="dash-next" class="dash-block" hidden>
-      <h3 class="dash-heading">Next step</h3>
+      <h3 class="dash-heading" data-i18n="home.nextStep">Next step</h3>
       <div id="next-body"></div>
     </section>
 
     <section class="entries" aria-labelledby="entries-heading">
-      <h3 id="entries-heading" class="dash-heading">Recent</h3>
+      <h3 id="entries-heading" class="dash-heading" data-i18n="home.recent">Recent</h3>
       <ul id="entry-list" class="entry-list"></ul>
-      <p id="entries-empty" class="entries-empty">
+      <p id="entries-empty" class="entries-empty" data-i18n="home.recentEmpty">
         Anything you add will appear here.
       </p>
     </section>
@@ -86,17 +86,17 @@
 
   <!-- Plan -->
   <section id="plan" class="tab-panel" hidden aria-labelledby="plan-title">
-    <h2 id="plan-title" class="screen-title">Your plan</h2>
+    <h2 id="plan-title" class="screen-title" data-i18n="plan.title">Your plan</h2>
     <div id="plan-body"></div>
   </section>
 
   <!-- Ask -->
   <section id="ask" class="tab-panel" hidden aria-labelledby="ask-title">
-    <h2 id="ask-title" class="screen-title">Ask Oikonomia</h2>
+    <h2 id="ask-title" class="screen-title" data-i18n="ask.title">Ask Oikonomia</h2>
     <div id="ask-thread" class="ask-thread" aria-live="polite"></div>
     <form id="ask-form" class="ask-form">
       <input id="ask-input" type="text" autocomplete="off"
-             placeholder="How are we doing this month?">
+             data-i18n-placeholder="ask.placeholder" placeholder="How are we doing this month?">
       <button type="submit" class="primary-action ask-send" aria-label="Ask">→</button>
     </form>
     <div id="ask-suggestions" class="ask-suggestions"></div>
@@ -104,7 +104,7 @@
 
   <!-- Records -->
   <section id="records" class="tab-panel" hidden aria-labelledby="records-title">
-    <h2 id="records-title" class="screen-title">Bank statements</h2>
+    <h2 id="records-title" class="screen-title" data-i18n="records.title">Bank statements</h2>
 
     <div id="import-choose">
       <p class="import-lead">
@@ -119,8 +119,8 @@
       </p>
 
       <label class="file-drop" for="statement-file">
-        <strong>Choose statements</strong>
-        <span>PDF, Excel or CSV, from any Indian bank</span>
+        <strong data-i18n="records.choose">Choose statements</strong>
+        <span data-i18n="records.formats">PDF, Excel or CSV, from any Indian bank</span>
       </label>
       <input id="statement-file" type="file"
              accept=".pdf,.csv,.tsv,.txt,.xls,.xlsx,.xlsm,.xlsb,.ods"
@@ -133,15 +133,15 @@
       </p>
       <p class="import-filename" id="import-password-file"></p>
       <label class="field">
-        <span class="field-label">Password</span>
+        <span class="field-label" data-i18n="records.passwordLabel">Password</span>
         <input id="statement-password" type="password" autocomplete="off" inputmode="text">
       </label>
       <p class="import-note">
         The password is used here on your phone and then forgotten. It is not saved
         and not sent anywhere.
       </p>
-      <button type="button" id="password-submit" class="primary-action">Open statement</button>
-      <button type="button" id="password-skip" class="secondary-action full">Skip this one</button>
+      <button type="button" id="password-submit" class="primary-action" data-i18n="records.open">Open statement</button>
+      <button type="button" id="password-skip" class="secondary-action full" data-i18n="records.skip">Skip this one</button>
     </div>
 
     <div id="import-working" hidden>
@@ -156,23 +156,23 @@
 
     <div id="import-error" hidden>
       <p class="import-lead" id="import-error-message"></p>
-      <button type="button" id="import-retry" class="primary-action">Try another file</button>
+      <button type="button" id="import-retry" class="primary-action" data-i18n="records.tryAnother">Try another file</button>
     </div>
   </section>
 
   <!-- More -->
   <section id="more" class="tab-panel" hidden aria-labelledby="more-title">
-    <h2 id="more-title" class="screen-title">More</h2>
+    <h2 id="more-title" class="screen-title" data-i18n="more.title">More</h2>
 
-    <h3 class="section-heading">Your household</h3>
+    <h3 class="section-heading" data-i18n="more.household">Your household</h3>
     <div id="household-body"></div>
 
-    <h3 class="section-heading">The assistant</h3>
+    <h3 class="section-heading" data-i18n="more.assistant">The assistant</h3>
 
     <details class="disclosure" id="assistant-panel">
       <summary class="row">
         <span class="row-main">
-          <span class="row-title">Oikonomia's assistant</span>
+          <span class="row-title" data-i18n="more.assistantName">Oikonomia's assistant</span>
           <span class="row-note" id="api-status">Not set up yet</span>
         </span>
         <span class="row-chevron" aria-hidden="true">›</span>
@@ -193,21 +193,21 @@
         </ol>
 
         <label class="field">
-          <span class="field-label">Your OpenRouter key</span>
+          <span class="field-label" data-i18n="more.keyLabel">Your OpenRouter key</span>
           <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-...">
         </label>
 
-        <button type="button" id="api-save" class="primary-action">Save and test</button>
-        <button type="button" id="api-remove" class="secondary-action full" hidden>Remove key</button>
+        <button type="button" id="api-save" class="primary-action" data-i18n="more.saveTest">Save and test</button>
+        <button type="button" id="api-remove" class="secondary-action full" data-i18n="more.removeKey" hidden>Remove key</button>
       </div>
     </details>
 
-    <h3 class="section-heading">Preferences</h3>
+    <h3 class="section-heading" data-i18n="more.preferences">Preferences</h3>
 
     <div class="row row-static">
       <span class="row-main">
-        <span class="row-title">Voice language</span>
-        <span class="row-note">Used when you speak an expense</span>
+        <span class="row-title" data-i18n="more.language">Language</span>
+        <span class="row-note" data-i18n="more.languageNote">Changes the whole app, and how it listens when you speak</span>
       </span>
       <select id="settings-language" class="row-control">
         <option value="en-IN">English</option>
@@ -215,7 +215,7 @@
       </select>
     </div>
 
-    <h3 class="section-heading">Your data</h3>
+    <h3 class="section-heading" data-i18n="more.yourData">Your data</h3>
 
     <p class="row-help">
       Everything Oikonomia knows about your household is kept on this device.
@@ -225,14 +225,14 @@
 
     <button type="button" id="erase-all" class="row row-action row-danger">
       <span class="row-main">
-        <span class="row-title">Erase everything on this device</span>
-        <span class="row-note">Records, plan, categories and key</span>
+        <span class="row-title" data-i18n="more.erase">Erase everything on this device</span>
+        <span class="row-note" data-i18n="more.eraseNote">Records, plan, categories and key</span>
       </span>
     </button>
 
     <button type="button" id="sign-out" class="row row-action" hidden>
       <span class="row-main">
-        <span class="row-title">Sign out</span>
+        <span class="row-title" data-i18n="more.signOut">Sign out</span>
       </span>
     </button>
 
@@ -254,7 +254,7 @@
       <path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19v-8.5Z"/>
       <path d="M9.5 20.5v-6h5v6" class="icon-inner"/>
     </svg>
-    <span class="tab-label">Home</span>
+    <span class="tab-label" data-i18n="tab.home">Home</span>
   </button>
 
   <button type="button" class="tab" data-tab="plan">
@@ -263,10 +263,10 @@
       <path d="M3.5 9h17M8 4.5v4M16 4.5v4" class="icon-inner"/>
       <path d="M7.5 13h4M7.5 16h7" class="icon-inner"/>
     </svg>
-    <span class="tab-label">Plan</span>
+    <span class="tab-label" data-i18n="tab.plan">Plan</span>
   </button>
 
-  <button type="button" class="tab tab-add" data-tab="add" aria-label="Add expense">
+  <button type="button" class="tab tab-add" data-tab="add" data-i18n-aria="tab.add" aria-label="Add expense">
     <span class="tab-plus" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" class="icon-inner"/></svg>
     </span>
@@ -276,14 +276,14 @@
     <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M20.5 11.5c0 4.1-3.8 7.4-8.5 7.4a9.8 9.8 0 0 1-2.6-.35L4.5 20l1.2-3.4A7 7 0 0 1 3.5 11.5c0-4.1 3.8-7.4 8.5-7.4s8.5 3.3 8.5 7.4Z"/>
     </svg>
-    <span class="tab-label">Ask</span>
+    <span class="tab-label" data-i18n="tab.ask">Ask</span>
   </button>
 
   <button type="button" class="tab" data-tab="more">
     <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 7h16M4 12h16M4 17h10" class="icon-inner"/>
     </svg>
-    <span class="tab-label">More</span>
+    <span class="tab-label" data-i18n="tab.more">More</span>
   </button>
 </nav>
 
@@ -300,11 +300,11 @@
           <path d="M18 11a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V19H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.1A6 6 0 0 0 18 11Z"/>
         </svg>
       </span>
-      <span id="voice-label">Say it instead</span>
+      <span id="voice-label" data-i18n="add.speak">Say it instead</span>
     </button>
 
     <p id="voice-language" class="voice-language" hidden>
-      <label for="language">Speaking in</label>
+      <label for="language" data-i18n="add.speakingIn">Speaking in</label>
       <select id="language" name="language">
         <option value="en-IN">English</option>
         <option value="hi-IN">हिन्दी</option>
@@ -313,10 +313,10 @@
 
     <p id="voice-heard" class="voice-heard" hidden></p>
 
-    <p id="voice-divider" class="voice-divider" hidden><span>or type it</span></p>
+    <p id="voice-divider" class="voice-divider" hidden><span data-i18n="add.orType">or type it</span></p>
 
     <label class="field">
-      <span class="field-label">How much?</span>
+      <span class="field-label" data-i18n="add.howMuch">How much?</span>
       <div class="amount-input">
         <span class="amount-prefix" aria-hidden="true">₹</span>
         <input id="amount" name="amount" type="text" inputmode="decimal"
@@ -325,16 +325,16 @@
     </label>
 
     <label class="field">
-      <span class="field-label">What was it?</span>
+      <span class="field-label" data-i18n="add.whatWas">What was it?</span>
       <input id="note" name="note" type="text" autocomplete="off"
-             placeholder="Milk, cab, school books…">
+             data-i18n-placeholder="add.placeholder" placeholder="Milk, cab, school books…">
     </label>
 
     <p id="form-error" class="form-error" hidden></p>
 
     <div class="sheet-actions">
-      <button type="button" id="cancel-button" class="secondary-action">Cancel</button>
-      <button type="submit" id="save-button" class="primary-action">Save</button>
+      <button type="button" id="cancel-button" class="secondary-action" data-i18n="add.cancel">Cancel</button>
+      <button type="submit" id="save-button" class="primary-action" data-i18n="add.save">Save</button>
     </div>
 
     <button type="button" id="delete-button" class="delete-action" hidden>
