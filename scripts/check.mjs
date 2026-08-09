@@ -235,6 +235,19 @@ if (/openrouter|categoriseWithAi|\bfetch\s*\(/i.test(engineJs)) {
   );
 }
 
+// An HTML table wearing an .xls name must not go through the spreadsheet
+// reader. Handed 04/07/2026 it decides that is a date, reads it American
+// fashion as the seventh of April, and returns a value already wrong — which
+// nothing downstream can detect.
+const sheetJs = readFileSync(join(root, 'public', 'statements', 'spreadsheet.js'), 'utf8');
+if (!/looksLikeHtml/.test(sheetJs) || !/readHtmlTable/.test(sheetJs)) {
+  fail(
+    'A bank statement dated 04/07 is read as the fourth of July',
+    'public/statements/spreadsheet.js no longer routes HTML tables around the spreadsheet ' +
+    'reader. Without that, SBI-style exports come back with the day and month swapped.'
+  );
+}
+
 // A statement is never trusted on its own say-so.
 const statementJs = readFileSync(join(root, 'public', 'statements', 'statement.js'), 'utf8');
 if (!/verifyAgainstBalance/.test(statementJs)) {

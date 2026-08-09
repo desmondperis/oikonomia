@@ -61,6 +61,47 @@ function detectDelimiter(lines) {
   return best;
 }
 
+/**
+ * Turn a plain grid of cells into a table with its columns understood.
+ *
+ * Shared by delimited files and spreadsheets, which arrive as the same thing
+ * once their wrapper has been taken off.
+ */
+export function tableFromRows(grid) {
+  if (!grid || grid.length === 0) {
+    return { columns: null, rows: [], preamble: [] };
+  }
+
+  // Banks put an account summary above the table, so the heading row is rarely
+  // the first line of the file.
+  const headerIndex = grid.findIndex((cells) => looksLikeHeader(cells));
+
+  if (headerIndex === -1) {
+    return {
+      columns: null,
+      rows: [],
+      preamble: grid.map((cells) => cells.join(' ').trim())
+    };
+  }
+
+  const columns = grid[headerIndex].map((heading) => ({
+    role: readColumnRole(heading),
+    heading: String(heading).trim(),
+    from: -Infinity,
+    to: Infinity
+  }));
+
+  const rows = grid
+    .slice(headerIndex + 1)
+    .map((cells) => columns.map((_, index) => String(cells[index] ?? '').trim()));
+
+  const preamble = grid
+    .slice(0, headerIndex)
+    .map((cells) => cells.join(' ').trim());
+
+  return { columns, rows, preamble };
+}
+
 /** Read delimited text into the same shape a PDF table produces. */
 export function readDelimited(text) {
   const lines = String(text)
@@ -73,34 +114,5 @@ export function readDelimited(text) {
   }
 
   const delimiter = detectDelimiter(lines);
-  const table = lines.map((line) => splitLine(line, delimiter));
-
-  // Banks put an account summary above the table, so the heading row is rarely
-  // the first line of the file.
-  const headerIndex = table.findIndex((cells) => looksLikeHeader(cells));
-
-  if (headerIndex === -1) {
-    return {
-      columns: null,
-      rows: [],
-      preamble: table.map((cells) => cells.join(' ').trim())
-    };
-  }
-
-  const columns = table[headerIndex].map((heading) => ({
-    role: readColumnRole(heading),
-    heading: String(heading).trim(),
-    from: -Infinity,
-    to: Infinity
-  }));
-
-  const rows = table
-    .slice(headerIndex + 1)
-    .map((cells) => columns.map((_, index) => (cells[index] ?? '').trim()));
-
-  const preamble = table
-    .slice(0, headerIndex)
-    .map((cells) => cells.join(' ').trim());
-
-  return { columns, rows, preamble };
+  return tableFromRows(lines.map((line) => splitLine(line, delimiter)));
 }

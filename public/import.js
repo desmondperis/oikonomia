@@ -16,6 +16,7 @@ import {
   StatementFileError, NEEDS_PASSWORD, WRONG_PASSWORD
 } from './statements/pdf.js';
 import { readScannedPdf, releaseReader, ScanTooSlow } from './statements/ocr.js';
+import { readSpreadsheet, isSpreadsheet } from './statements/spreadsheet.js';
 
 const el = (id) => document.getElementById(id);
 
@@ -115,6 +116,9 @@ async function readOne(job) {
         } finally {
           await closePdf(pdf);
         }
+      } else if (isSpreadsheet(job.file)) {
+        ui.workingMessage.textContent = `Opening ${job.file.name}…`;
+        table = await readSpreadsheet(job.file);
       } else {
         table = readDelimited(await job.file.text());
       }

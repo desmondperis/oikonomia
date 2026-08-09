@@ -113,11 +113,18 @@
         and are never sent anywhere.
       </p>
 
+      <p class="import-note">
+        If your bank offers Excel or CSV from net banking, choose that over PDF.
+        It reads instantly and is far less likely to be misread.
+      </p>
+
       <label class="file-drop" for="statement-file">
         <strong>Choose statements</strong>
-        <span>PDF or CSV, from any Indian bank</span>
+        <span>PDF, Excel or CSV, from any Indian bank</span>
       </label>
-      <input id="statement-file" type="file" accept=".pdf,.csv,.tsv,.txt" multiple hidden>
+      <input id="statement-file" type="file"
+             accept=".pdf,.csv,.tsv,.txt,.xls,.xlsx,.xlsm,.xlsb,.ods"
+             multiple hidden>
     </div>
 
     <div id="import-password" hidden>

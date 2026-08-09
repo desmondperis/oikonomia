@@ -22,6 +22,11 @@ const FILES = [
   ['pdfjs-dist/build/pdf.min.mjs', 'pdf.min.mjs'],
   ['pdfjs-dist/build/pdf.worker.min.mjs', 'pdf.worker.min.mjs'],
 
+  // Reading a spreadsheet. Indian banks all call their download "Excel" and
+  // mean three different things by it, so the full reader is needed: real old
+  // Excel files, modern ones, and HTML tables wearing an .xls name.
+  ['xlsx/xlsx.mjs', 'xlsx.mjs'],
+
   // Reading a scanned page, character by character.
   ['tesseract.js/dist/tesseract.esm.min.js', 'tesseract.esm.min.js'],
   ['tesseract.js/dist/worker.min.js', 'tesseract-worker.min.js'],
