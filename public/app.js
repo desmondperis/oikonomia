@@ -19,8 +19,11 @@ import {
 import { setUpPlan, renderPlan, loadBudget, clearBudget } from './plan.js';
 import { resetImport } from './import.js';
 import { compare } from './budget.js';
-import { setUpShell, showTab, loadSession, renderHousehold, getSession } from './shell.js';
+import {
+  setUpShell, showTab, loadSession, renderHousehold, getSession, whenSharingStarts
+} from './shell.js';
 import { setUpAsk, renderAsk } from './ask.js';
+import { syncNow, unlock, isUnlocked, storedPhrase, forgetPhrase, resyncFromScratch } from './sync.js';
 import { financialState } from './engine.js';
 import { principlesFor } from './framework.js';
 import {
@@ -129,11 +132,13 @@ function loadEntries() {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
 
-    // Entries written before money could come in as well as go out.
+    // Entries written before money could come in as well as go out, and
+    // before records knew when they were last touched.
     return parsed.map((entry) => ({
       direction: 'debit',
       source: 'manual',
-      ...entry
+      ...entry,
+      updatedAt: entry.updatedAt || entry.at || 0
     }));
   } catch {
     // A corrupt store must never lose the app. Start empty and carry on.
@@ -151,6 +156,17 @@ function saveEntries(entries) {
 }
 
 let entries = loadEntries();
+
+/**
+ * The records that still exist.
+ *
+ * A removed record is kept as a marker rather than deleted outright, so that
+ * another phone in the household learns it has gone instead of helpfully
+ * putting it back on the next sync. Nothing but sync should ever see those.
+ */
+function live() {
+  return entries.filter((entry) => !entry.deleted);
+}
 
 function newId() {
   return crypto.randomUUID
@@ -280,8 +296,10 @@ function renderNextStep(entries, budget) {
 /* ---------- rendering ---------- */
 
 function render() {
+  const showing = live();
+
   const monthStart = startOfMonth();
-  const thisMonth = entries.filter((entry) => entry.at >= monthStart);
+  const thisMonth = showing.filter((entry) => entry.at >= monthStart);
 
   // Money coming in is not spending. Only what went out is counted here.
   const spent = thisMonth
@@ -300,7 +318,7 @@ function render() {
 
   if (budget) {
     // Once there is a plan, what is left matters far more than what has gone.
-    const comparison = compare(budget, entries);
+    const comparison = compare(budget, showing);
     const left = comparison.remainingPaise;
 
     ui.headlineLabel.textContent = left >= 0 ? t('home.left') : t('home.over');
@@ -340,12 +358,12 @@ function render() {
     }
   }
 
-  renderInsight(entries);
-  renderNextStep(entries, budget);
+  renderInsight(showing);
+  renderNextStep(showing, budget);
 
   ui.list.replaceChildren();
 
-  const recent = entries.slice(0, 20);
+  const recent = showing.slice(0, 20);
   ui.empty.hidden = recent.length > 0;
 
   for (const entry of recent) {
@@ -418,10 +436,19 @@ function render() {
   }
 }
 
-/** Take an entry out, keeping it in hand long enough to put back on failure. */
+/**
+ * Take an entry out.
+ *
+ * A marker is left behind rather than the record simply vanishing, so another
+ * phone in the household learns it has gone instead of putting it back on the
+ * next sync. The marker holds nothing but an identifier and a time.
+ */
 function removeEntry(id) {
   const before = entries;
-  entries = entries.filter((entry) => entry.id !== id);
+
+  entries = entries.map((entry) =>
+    entry.id === id ? { id: entry.id, deleted: true, updatedAt: Date.now() } : entry
+  );
 
   if (!saveEntries(entries)) {
     entries = before;
@@ -431,6 +458,7 @@ function removeEntry(id) {
 
   render();
   showToast(t('add.removed'));
+  syncSoon();
 }
 
 /* ---------- speaking an expense ---------- */
@@ -617,11 +645,13 @@ function handleDelete() {
     return;
   }
 
-  const removed = entries.find((entry) => entry.id === editingId);
-  entries = entries.filter((entry) => entry.id !== editingId);
+  const before = entries;
+  entries = entries.map((entry) =>
+    entry.id === editingId ? { id: entry.id, deleted: true, updatedAt: Date.now() } : entry
+  );
 
   if (!saveEntries(entries)) {
-    if (removed) entries.unshift(removed);
+    entries = before;
     ui.error.textContent = t('add.cannotSave');
     ui.error.hidden = false;
     resetDeleteButton();
@@ -631,6 +661,7 @@ function handleDelete() {
   closeSheet();
   render();
   showToast(t('add.removed'));
+  syncSoon();
 }
 
 let toastTimer = null;
@@ -668,7 +699,7 @@ function handleSubmit(event) {
 
   if (editingId) {
     entries = entries.map((entry) =>
-      entry.id === editingId ? { ...entry, paise, note } : entry
+      entry.id === editingId ? { ...entry, paise, note, updatedAt: Date.now() } : entry
     );
   } else {
     entries = [
@@ -677,6 +708,7 @@ function handleSubmit(event) {
         paise,
         note,
         at: Date.now(),
+        updatedAt: Date.now(),
         direction: 'debit',
         source: 'manual'
       },
@@ -695,6 +727,7 @@ function handleSubmit(event) {
   closeSheet();
   render();
   showToast(wasEditing ? t('add.updated') : t('add.added', { amount: formatPaise(paise) }));
+  syncSoon();
 }
 
 /* ---------- taking in a statement ---------- */
@@ -707,7 +740,7 @@ function fingerprint(entry) {
 }
 
 function importTransactions(transactions) {
-  const known = new Set(entries.map(fingerprint));
+  const known = new Set(live().map(fingerprint));
 
   const incoming = transactions.map((transaction) => ({
     id: newId(),
@@ -715,6 +748,7 @@ function importTransactions(transactions) {
     note: transaction.description || 'Bank transaction',
     // Midday, so a time zone can never nudge a transaction into another day.
     at: Date.parse(`${transaction.date}T12:00:00`),
+    updatedAt: Date.now(),
     direction: transaction.direction === 'credit' ? 'credit' : 'debit',
     source: 'statement',
     statement: transaction.ending
@@ -748,6 +782,37 @@ function importTransactions(transactions) {
   );
 
   categoriseEntries({ quiet: true });
+  syncSoon();
+}
+
+/* ---------- keeping the household in step ---------- */
+
+let syncTimer = null;
+
+/**
+ * Sync shortly, not immediately.
+ *
+ * Somebody adding five expenses in a row should cause one exchange with the
+ * server, not five — and on a weak connection the difference matters.
+ */
+function syncSoon() {
+  if (!isUnlocked()) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(runSync, 2500);
+}
+
+async function runSync() {
+  if (!isUnlocked()) return;
+
+  const result = await syncNow(entries, (merged) => {
+    entries = merged;
+    saveEntries(entries);
+    render();
+  });
+
+  if (result.synced && result.brought > 0) {
+    showToast(t('sync.brought', { n: result.brought }));
+  }
 }
 
 /* ---------- sorting spending into categories ---------- */
@@ -768,15 +833,15 @@ async function categoriseEntries({ quiet = false } = {}) {
   try {
     let changed = false;
 
-    for (const entry of entries) {
+    for (const entry of live()) {
       if (entry.category) continue;
       const local = categoriseLocally(entry.note);
-      if (local) { entry.category = local; changed = true; }
+      if (local) { entry.category = local; entry.updatedAt = Date.now(); changed = true; }
     }
 
     if (changed) { saveEntries(entries); render(); }
 
-    const unknown = entries.filter((entry) => !entry.category);
+    const unknown = live().filter((entry) => !entry.category);
     if (unknown.length === 0 || !hasKey()) return;
 
     if (!quiet) showToast(`Sorting ${unknown.length} more…`);
@@ -1002,8 +1067,8 @@ setLanguage(language);
 applyTheme(loadTheme());
 
 setUpImport(importTransactions);
-setUpPlan({ entries: () => entries, changed: render });
-setUpAsk({ entries: () => entries });
+setUpPlan({ entries: live, changed: render });
+setUpAsk({ entries: live });
 
 setUpShell({
   add: () => openSheet(),
@@ -1019,7 +1084,25 @@ setUpShell({
 render();
 askLanguageIfNeeded();
 categoriseEntries({ quiet: true });
-loadSession().then(renderHousehold);
+
+whenSharingStarts(runSync);
+
+loadSession().then(async (session) => {
+  renderHousehold();
+
+  // A phone that already holds the words picks up where the household left off.
+  const phrase = storedPhrase();
+  if (session.household && phrase) {
+    await unlock(phrase, session.household.code);
+    runSync();
+  }
+});
+
+// Bring anything new in when the app is returned to, rather than only on a
+// change made here.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') runSync();
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

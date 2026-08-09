@@ -11,7 +11,7 @@
  * reading broke on a phone.
  */
 
-const CACHE = 'oikonomia-shell-v14';
+const CACHE = 'oikonomia-shell-v15';
 
 /* Pages are cached at the addresses they are actually visited at — Cloudflare
    serves /app rather than /app.html, and caching the redirect instead of the
@@ -33,6 +33,9 @@ const SHELL = [
   'ai.js',
   'survey.js',
   'i18n.js',
+  'crypto.js',
+  'sync.js',
+  'phrase.js',
   'framework.js',
   'engine.js',
   'budget.js',

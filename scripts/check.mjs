@@ -214,6 +214,32 @@ function runSuite(file, promise) {
 const nlp = runSuite('test-nlp.mjs', 'Spoken expenses are read correctly');
 const statements = runSuite('test-statements.mjs', 'Bank statements are read correctly');
 const engine = runSuite('test-engine.mjs', 'The financial engine calculates correctly');
+const keys = runSuite('test-crypto.mjs', "A household's records are sealed to that household");
+
+// The server may never be handed a readable record. If any of these appear in
+// what sync sends, something is leaving the device in the clear.
+const syncJs = readFileSync(join(root, 'public', 'sync.js'), 'utf8');
+if (!/seal\(key,/.test(syncJs) || !/unseal\(key,/.test(syncJs)) {
+  fail(
+    'Records are sealed before they leave the device',
+    'public/sync.js no longer seals what it sends or unseals what it receives.'
+  );
+}
+
+// The server must have no means of opening what it stores. Comments are
+// stripped first, so an explanation of why it cannot is not mistaken for it
+// doing so — which is exactly what tripped this check when it was written.
+const recordsApi = readFileSync(join(root, 'functions', 'api', 'records', 'index.js'), 'utf8')
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')
+  .replace(/\/\/[^\n]*/g, ' ');
+
+if (/crypto\.subtle|deriveKey|decrypt|importKey|PBKDF2/i.test(recordsApi)) {
+  fail(
+    'The server never holds the means to open a record',
+    'functions/api/records/index.js does cryptography. It moves sealed blobs between a ' +
+    "household's own devices and must have no way to open one."
+  );
+}
 
 // Every passage the app can quote must be written down here. Nothing else may
 // be cited, which is what stops a model inventing a verse.
@@ -275,6 +301,7 @@ if (failures.length === 0) {
   console.log((nlp.stdout || '').trim());
   console.log((statements.stdout || '').trim());
   console.log((engine.stdout || '').trim());
+  console.log((keys.stdout || '').trim());
   process.exit(0);
 }
 

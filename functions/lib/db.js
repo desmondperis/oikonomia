@@ -31,7 +31,24 @@ export async function ensureSchema(db) {
       created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS audit_log (
       id TEXT PRIMARY KEY, household_id TEXT, user_id TEXT,
-      action TEXT NOT NULL, at INTEGER NOT NULL)`
+      action TEXT NOT NULL, at INTEGER NOT NULL)`,
+
+    /* A household's records, sealed. The server holds `body` and cannot open
+       it: the key is derived on the household's own devices from a phrase this
+       database has never seen. `updated_at` and `deleted` are in the clear
+       because syncing needs to know what changed and when — nothing else is. */
+    `CREATE TABLE IF NOT EXISTS records (
+      household_id TEXT NOT NULL, id TEXT NOT NULL,
+      updated_at INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0,
+      iv TEXT, body TEXT,
+      PRIMARY KEY (household_id, id))`,
+    `CREATE INDEX IF NOT EXISTS records_by_household ON records (household_id, updated_at)`,
+
+    /* A token sealed with the household's key, so a phone can tell a wrong
+       phrase immediately rather than syncing records it cannot read. */
+    `CREATE TABLE IF NOT EXISTS household_check (
+      household_id TEXT PRIMARY KEY, iv TEXT NOT NULL, body TEXT NOT NULL,
+      set_at INTEGER NOT NULL)`
   ];
 
   for (const sql of statements) await db.prepare(sql).run();
