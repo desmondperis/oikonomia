@@ -28,7 +28,86 @@
   <img src="icon-192.png" alt="" width="28" height="28" class="app-mark">
   <span class="app-name">Oikonomia</span>
   <span id="household-badge" class="household-badge" hidden></span>
+  <button type="button" id="settings-open" class="icon-button"
+          data-i18n-aria="settings.title" aria-label="Settings">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.2"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+    </svg>
+  </button>
 </header>
+
+<section id="settings" class="settings-sheet" hidden aria-labelledby="settings-title">
+  <header class="settings-head">
+    <button type="button" id="settings-close" class="back-action"
+            data-i18n-aria="settings.close" aria-label="Close">←</button>
+    <h2 id="settings-title" class="import-title" data-i18n="settings.title">Settings</h2>
+  </header>
+
+  <div class="settings-body">
+    <h3 class="section-heading" data-i18n="settings.appearance">Appearance</h3>
+
+    <div class="row row-static">
+      <span class="row-main">
+        <span class="row-title" data-i18n="settings.theme">Theme</span>
+        <span class="row-note" data-i18n="settings.themeNote">Follows your phone unless you choose</span>
+      </span>
+      <select id="theme-choice" class="row-control">
+        <option value="system" data-i18n="settings.themeSystem">Your phone's setting</option>
+        <option value="light" data-i18n="settings.themeLight">Light</option>
+        <option value="dark" data-i18n="settings.themeDark">Dark</option>
+      </select>
+    </div>
+
+    <div class="row row-static">
+      <span class="row-main">
+        <span class="row-title" data-i18n="more.language">Language</span>
+        <span class="row-note" data-i18n="more.languageNote">Changes the whole app</span>
+      </span>
+      <select id="settings-language" class="row-control">
+        <option value="en-IN">English</option>
+        <option value="hi-IN">हिन्दी</option>
+      </select>
+    </div>
+
+    <h3 class="section-heading" data-i18n="settings.about">About Oikonomia</h3>
+
+    <a class="row row-link" href="/about" target="_blank" rel="noopener">
+      <span class="row-main"><span class="row-title" data-i18n="more.about">About</span></span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+    </a>
+    <a class="row row-link" href="/privacy" target="_blank" rel="noopener">
+      <span class="row-main"><span class="row-title" data-i18n="more.privacy">Privacy</span></span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+    </a>
+    <a class="row row-link" href="/terms" target="_blank" rel="noopener">
+      <span class="row-main"><span class="row-title" data-i18n="more.terms">Terms</span></span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+    </a>
+    <a class="row row-link" href="/contact" target="_blank" rel="noopener">
+      <span class="row-main"><span class="row-title" data-i18n="more.contact">Contact</span></span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+    </a>
+    <a class="row row-link" id="feedback-link"
+       href="mailto:desmondperis@gmail.com?subject=Oikonomia%20feedback">
+      <span class="row-main">
+        <span class="row-title" data-i18n="settings.feedback">Send feedback</span>
+        <span class="row-note" data-i18n="settings.feedbackNote">Tell me what is wrong or missing</span>
+      </span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+    </a>
+
+    <h3 class="section-heading" data-i18n="settings.account">Account</h3>
+
+    <button type="button" id="sign-out" class="row row-action" hidden>
+      <span class="row-main"><span class="row-title" data-i18n="more.signOut">Sign out</span></span>
+    </button>
+
+    <p id="signed-in-as" class="row-help"></p>
+
+    <p class="app-version">Oikonomia · household stewardship</p>
+  </div>
+</section>
 
 <main class="app-main">
 
@@ -202,19 +281,6 @@
       </div>
     </details>
 
-    <h3 class="section-heading" data-i18n="more.preferences">Preferences</h3>
-
-    <div class="row row-static">
-      <span class="row-main">
-        <span class="row-title" data-i18n="more.language">Language</span>
-        <span class="row-note" data-i18n="more.languageNote">Changes the whole app, and how it listens when you speak</span>
-      </span>
-      <select id="settings-language" class="row-control">
-        <option value="en-IN">English</option>
-        <option value="hi-IN">हिन्दी</option>
-      </select>
-    </div>
-
     <h3 class="section-heading" data-i18n="more.yourData">Your data</h3>
 
     <p class="row-help">
@@ -230,20 +296,6 @@
       </span>
     </button>
 
-    <button type="button" id="sign-out" class="row row-action" hidden>
-      <span class="row-main">
-        <span class="row-title" data-i18n="more.signOut">Sign out</span>
-      </span>
-    </button>
-
-    <nav class="more-links">
-      <a href="/about" target="_blank" rel="noopener">About</a>
-      <a href="/privacy" target="_blank" rel="noopener">Privacy</a>
-      <a href="/terms" target="_blank" rel="noopener">Terms</a>
-      <a href="/contact" target="_blank" rel="noopener">Contact</a>
-    </nav>
-
-    <p class="app-version">Oikonomia · household stewardship</p>
   </section>
 
 </main>

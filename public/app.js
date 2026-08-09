@@ -19,7 +19,7 @@ import {
 import { setUpPlan, renderPlan, loadBudget, clearBudget } from './plan.js';
 import { resetImport } from './import.js';
 import { compare } from './budget.js';
-import { setUpShell, showTab, loadSession, renderHousehold } from './shell.js';
+import { setUpShell, showTab, loadSession, renderHousehold, getSession } from './shell.js';
 import { setUpAsk, renderAsk } from './ask.js';
 import { financialState } from './engine.js';
 import { principlesFor } from './framework.js';
@@ -69,6 +69,11 @@ const ui = {
   deleteButton: el('delete-button'),
   welcome: el('welcome'),
   settingsLanguage: el('settings-language'),
+  settingsSheet: el('settings'),
+  settingsOpen: el('settings-open'),
+  settingsClose: el('settings-close'),
+  themeChoice: el('theme-choice'),
+  signedInAs: el('signed-in-as'),
   eraseAll: el('erase-all'),
   apiKey: el('api-key'),
   apiSave: el('api-save'),
@@ -88,6 +93,8 @@ function rememberLanguage(value) {
   language = setLanguage(value);
   ui.settingsLanguage.value = language;
   ui.language.value = language;
+  // The words in the settings sheet change too — it is not part of the tabs.
+  applyTo(ui.settingsSheet);
   render();
   renderHousehold();
 }
@@ -820,10 +827,62 @@ async function categoriseEntries({ quiet = false } = {}) {
 
 /** Called by the shell when the More tab is opened. */
 function refreshSettings() {
-  ui.settingsLanguage.value = language;
   ui.apiKey.value = '';
   showKeyStatus();
   renderHousehold();
+}
+
+/* ---------- how the app looks ---------- */
+
+const THEME_KEY = 'oikonomia.theme.v1';
+
+function loadTheme() {
+  try { return localStorage.getItem(THEME_KEY) || 'system'; } catch { return 'system'; }
+}
+
+/**
+ * Follow the phone unless the household has said otherwise.
+ *
+ * Someone reading in bright sun, or in bed with the lights off, knows better
+ * than the phone does what they need.
+ */
+function applyTheme(choice) {
+  const root = document.documentElement;
+
+  if (choice === 'light' || choice === 'dark') root.dataset.theme = choice;
+  else delete root.dataset.theme;
+
+  // Keep the phone's own chrome in step with the page.
+  const dark = choice === 'dark' ||
+    (choice === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = dark ? '#1c1b19' : '#15503c';
+}
+
+function rememberTheme(choice) {
+  try { localStorage.setItem(THEME_KEY, choice); } catch { /* fine */ }
+  applyTheme(choice);
+}
+
+/* ---------- the settings sheet ---------- */
+
+function openSettingsSheet() {
+  ui.settingsLanguage.value = language;
+  ui.themeChoice.value = loadTheme();
+
+  const session = getSession();
+  ui.signedInAs.textContent = session.signedIn && session.user
+    ? t('settings.signedInAs', { email: session.user.email })
+    : t('settings.notSignedIn');
+
+  ui.settingsSheet.hidden = false;
+  ui.settingsClose.focus();
+}
+
+function closeSettingsSheet() {
+  ui.settingsSheet.hidden = true;
+  ui.settingsOpen.focus();
 }
 
 function showKeyStatus(message = null, kind = null) {
@@ -924,12 +983,23 @@ ui.settingsLanguage.addEventListener('change', () => {
   rememberLanguage(ui.settingsLanguage.value);
 });
 
+ui.settingsOpen.addEventListener('click', openSettingsSheet);
+ui.settingsClose.addEventListener('click', closeSettingsSheet);
+
+ui.themeChoice.addEventListener('change', () => rememberTheme(ui.themeChoice.value));
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !ui.settingsSheet.hidden) closeSettingsSheet();
+});
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.sheet.hidden) closeSheet();
 });
 
-// Put the household's own language on the page before anything is drawn.
+// Put the household's own language and colours on the page before anything is
+// drawn, so nothing flashes in the wrong one.
 setLanguage(language);
+applyTheme(loadTheme());
 
 setUpImport(importTransactions);
 setUpPlan({ entries: () => entries, changed: render });

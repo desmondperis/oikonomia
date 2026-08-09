@@ -11,6 +11,7 @@
   --accent:     #15503c;   /* the green of the mark */
   --accent-ink: #ffffff;
   --gold:       #e39a2e;   /* the gold of the mark */
+  --danger:     #a4442f;   /* something has gone wrong, or is about to */
   --shadow:     0 1px 2px rgba(43, 41, 38, .06), 0 8px 24px rgba(43, 41, 38, .06);
 
   --tap: 3.25rem;           /* every touch target is at least this tall */
@@ -23,8 +24,10 @@
   --gap-section: 2.5rem;
 }
 
+/* Dark by the phone's own setting, unless the household has said otherwise.
+   Both routes set the same values, and an explicit choice always wins. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --paper:     #1c1b19;
     --card:      #262421;
     --ink:       #f0ece5;
@@ -36,6 +39,20 @@
     --gold:      #e9a94a;
     --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
   }
+}
+
+:root[data-theme="dark"] {
+  --paper:     #1c1b19;
+  --card:      #262421;
+  --ink:       #f0ece5;
+  --ink-soft:  #a8a29a;
+  --ink-faint: #7a746c;
+  --rule:      #38352f;
+  --accent:    #5fa98a;
+  --accent-ink:#0e2a20;
+  --gold:      #e9a94a;
+  --danger:    #e59a86;
+  --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
 }
 
 * { box-sizing: border-box; }
@@ -119,6 +136,72 @@ body {
   font-size: .75rem;
   font-weight: 600;
   letter-spacing: .06em;
+}
+
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-right: -.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-button:active { background: var(--rule); }
+
+/* The household badge sits beside the gear rather than pushing it about. */
+.household-badge + .icon-button { margin-left: .375rem; }
+.app-name + .icon-button { margin-left: auto; }
+
+/* ---------- settings ---------- */
+
+.settings-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--paper);
+  overflow-y: auto;
+  animation: settle .18s ease-out;
+}
+
+.settings-head {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: .75rem var(--gutter) calc(.75rem + env(safe-area-inset-top));
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+
+.settings-body {
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 0 var(--gutter) calc(3rem + env(safe-area-inset-bottom));
+}
+
+.row-link {
+  text-decoration: none;
+  color: inherit;
 }
 
 .app-main {
@@ -268,7 +351,7 @@ body {
 }
 
 .meter-fill[data-state="quick"] { background: var(--gold); }
-.meter-fill[data-state="over"]  { background: #a4442f; }
+.meter-fill[data-state="over"]  { background: var(--danger); }
 
 .meter-today {
   position: absolute;
@@ -571,11 +654,7 @@ body {
   font-size: .875rem;
 }
 
-.row-danger .row-title { color: #a4442f; }
-
-@media (prefers-color-scheme: dark) {
-  .row-danger .row-title { color: #e59a86; }
-}
+.row-danger .row-title { color: var(--danger); }
 
 .row-help {
   margin: 0 0 .875rem;
@@ -650,11 +729,7 @@ body {
 }
 
 .status-good { color: var(--accent); }
-.status-bad { color: #a4442f; }
-
-@media (prefers-color-scheme: dark) {
-  .status-bad { color: #e59a86; }
-}
+.status-bad { color: var(--danger); }
 
 /* ---------- the plan ---------- */
 
@@ -702,11 +777,7 @@ body {
 
 .plan-fine  { color: var(--accent); }
 .plan-quick { color: var(--gold); }
-.plan-over  { color: #a4442f; }
-
-@media (prefers-color-scheme: dark) {
-  .plan-over { color: #e59a86; }
-}
+.plan-over  { color: var(--danger); }
 
 .plan-why {
   margin: 0 0 .75rem;
@@ -1047,12 +1118,8 @@ body {
 .entry-remove[data-armed="true"] {
   font-size: .875rem;
   font-weight: 600;
-  color: #a4442f;
-  background: color-mix(in srgb, #a4442f 12%, transparent);
-}
-
-@media (prefers-color-scheme: dark) {
-  .entry-remove[data-armed="true"] { color: #e59a86; }
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 
 .entry-note { min-width: 0; overflow-wrap: anywhere; }
@@ -1255,11 +1322,7 @@ body {
 .form-error {
   margin: -.5rem 0 1rem;
   font-size: .9375rem;
-  color: #a4442f;
-}
-
-@media (prefers-color-scheme: dark) {
-  .form-error { color: #e59a86; }
+  color: var(--danger);
 }
 
 .sheet-actions {
@@ -1281,10 +1344,6 @@ body {
   font: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-}
-
-@media (prefers-color-scheme: dark) {
-  .delete-action { color: #e59a86; }
 }
 
 .delete-action[data-confirming="true"] { font-weight: 600; }

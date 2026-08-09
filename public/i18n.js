@@ -160,6 +160,23 @@ const WORDS = {
   'more.terms':          ['Terms', 'शर्तें'],
   'more.contact':        ['Contact', 'संपर्क'],
 
+  /* ---------- settings ---------- */
+  'settings.title':      ['Settings', 'सेटिंग'],
+  'settings.close':      ['Close', 'बंद करें'],
+  'settings.appearance': ['Appearance', 'दिखावट'],
+  'settings.theme':      ['Theme', 'रंग-रूप'],
+  'settings.themeNote':  ['Follows your phone unless you choose', 'आपके फ़ोन के अनुसार, जब तक आप न चुनें'],
+  'settings.themeSystem':["Your phone's setting", 'फ़ोन की सेटिंग'],
+  'settings.themeLight': ['Light', 'हल्का'],
+  'settings.themeDark':  ['Dark', 'गहरा'],
+  'settings.about':      ['About Oikonomia', 'ओइकोनोमिया के बारे में'],
+  'settings.feedback':   ['Send feedback', 'सुझाव भेजें'],
+  'settings.feedbackNote':['Tell me what is wrong or missing', 'बताएँ क्या गलत है या क्या कमी है'],
+  'settings.account':    ['Account', 'खाता'],
+  'settings.signedInAs': ['Signed in as {email}', '{email} से साइन इन'],
+  'settings.notSignedIn':['Not signed in. Everything stays on this device.',
+                          'साइन इन नहीं हैं। सब कुछ इसी डिवाइस पर रहता है।'],
+
   /* ---------- categories ---------- */
   'cat.Rent':                  ['Rent', 'किराया'],
   'cat.Groceries':             ['Groceries', 'राशन'],
