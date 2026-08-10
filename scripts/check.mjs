@@ -215,6 +215,7 @@ const nlp = runSuite('test-nlp.mjs', 'Spoken expenses are read correctly');
 const statements = runSuite('test-statements.mjs', 'Bank statements are read correctly');
 const engine = runSuite('test-engine.mjs', 'The financial engine calculates correctly');
 const keys = runSuite('test-crypto.mjs', "A household's records are sealed to that household");
+const sharing = runSuite('test-sync.mjs', "A household's phones stay in step without losing anything");
 
 // The server may never be handed a readable record. If any of these appear in
 // what sync sends, something is leaving the device in the clear.
@@ -302,6 +303,7 @@ if (failures.length === 0) {
   console.log((statements.stdout || '').trim());
   console.log((engine.stdout || '').trim());
   console.log((keys.stdout || '').trim());
+  console.log((sharing.stdout || '').trim());
   process.exit(0);
 }
 

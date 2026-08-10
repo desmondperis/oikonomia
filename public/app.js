@@ -23,7 +23,10 @@ import {
   setUpShell, showTab, loadSession, renderHousehold, getSession, whenSharingStarts
 } from './shell.js';
 import { setUpAsk, renderAsk } from './ask.js';
-import { syncNow, unlock, isUnlocked, storedPhrase, forgetPhrase, resyncFromScratch } from './sync.js';
+import {
+  syncNow, unlock, isUnlocked, storedPhrase, forgetPhrase,
+  resyncFromScratch, markChanged, markAllChanged
+} from './sync.js';
 import { financialState } from './engine.js';
 import { principlesFor } from './framework.js';
 import {
@@ -458,7 +461,7 @@ function removeEntry(id) {
 
   render();
   showToast(t('add.removed'));
-  syncSoon();
+  syncSoon(id);
 }
 
 /* ---------- speaking an expense ---------- */
@@ -658,10 +661,11 @@ function handleDelete() {
     return;
   }
 
+  const removedId = editingId;
   closeSheet();
   render();
   showToast(t('add.removed'));
-  syncSoon();
+  syncSoon(removedId);
 }
 
 let toastTimer = null;
@@ -696,6 +700,7 @@ function handleSubmit(event) {
   }
 
   const before = entries;
+  const touched = editingId || newId();
 
   if (editingId) {
     entries = entries.map((entry) =>
@@ -704,7 +709,7 @@ function handleSubmit(event) {
   } else {
     entries = [
       {
-        id: newId(),
+        id: touched,
         paise,
         note,
         at: Date.now(),
@@ -727,7 +732,7 @@ function handleSubmit(event) {
   closeSheet();
   render();
   showToast(wasEditing ? t('add.updated') : t('add.added', { amount: formatPaise(paise) }));
-  syncSoon();
+  syncSoon(touched);
 }
 
 /* ---------- taking in a statement ---------- */
@@ -782,7 +787,7 @@ function importTransactions(transactions) {
   );
 
   categoriseEntries({ quiet: true });
-  syncSoon();
+  syncSoon(...fresh.map((entry) => entry.id));
 }
 
 /* ---------- keeping the household in step ---------- */
@@ -795,7 +800,12 @@ let syncTimer = null;
  * Somebody adding five expenses in a row should cause one exchange with the
  * server, not five — and on a weak connection the difference matters.
  */
-function syncSoon() {
+function syncSoon(...ids) {
+  // Note what changed even when this phone is not sharing yet, so that a
+  // household signing in after weeks of use sends everything, not only what
+  // happened afterwards.
+  for (const id of ids) if (id) markChanged(id);
+
   if (!isUnlocked()) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(runSync, 2500);
@@ -836,7 +846,12 @@ async function categoriseEntries({ quiet = false } = {}) {
     for (const entry of live()) {
       if (entry.category) continue;
       const local = categoriseLocally(entry.note);
-      if (local) { entry.category = local; entry.updatedAt = Date.now(); changed = true; }
+      if (local) {
+        entry.category = local;
+        entry.updatedAt = Date.now();
+        markChanged(entry.id);
+        changed = true;
+      }
     }
 
     if (changed) { saveEntries(entries); render(); }
@@ -872,6 +887,8 @@ async function categoriseEntries({ quiet = false } = {}) {
       for (const [merchant, category] of Object.entries(answers)) {
         for (const entry of byMerchant.get(merchant) || []) {
           entry.category = category;
+          entry.updatedAt = Date.now();
+          markChanged(entry.id);
           sorted++;
         }
       }
@@ -1093,8 +1110,12 @@ loadSession().then(async (session) => {
   // A phone that already holds the words picks up where the household left off.
   const phrase = storedPhrase();
   if (session.household && phrase) {
-    await unlock(phrase, session.household.code);
-    runSync();
+    const outcome = await unlock(phrase, session.household.code);
+
+    // The words on this phone no longer open this household — somebody changed
+    // households, or set different words elsewhere. Better to say nothing and
+    // stay local than to sync records nobody can read.
+    if (outcome !== 'wrong') runSync();
   }
 });
 

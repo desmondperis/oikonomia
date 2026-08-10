@@ -13,6 +13,7 @@ import { deriveKey, seal, unseal, makeCheck, checkPasses, newPhrase, tidyPhrase 
 
 const SINCE_KEY = 'oikonomia.syncedAt.v1';
 const PHRASE_KEY = 'oikonomia.phrase.v1';
+const PENDING_KEY = 'oikonomia.pending.v1';
 
 let key = null;
 let householdCode = null;
@@ -58,6 +59,11 @@ export function isUnlocked() {
  */
 export async function unlock(phrase, code) {
   householdCode = code;
+
+  // A failed attempt must leave the phone locked, not still holding whatever
+  // key it had before.
+  key = null;
+
   const candidate = await deriveKey(phrase, code);
 
   let token = null;
@@ -105,6 +111,38 @@ function rememberSynced(when) {
   try { localStorage.setItem(SINCE_KEY, String(when)); } catch { /* fine */ }
 }
 
+/* ---------- what still needs sending ---------- */
+
+/**
+ * Records changed here and not yet accepted by the server.
+ *
+ * Kept as an explicit list rather than worked out by comparing times. The
+ * server's clock and the phone's are not the same clock, and deciding what to
+ * send by comparing one against the other means a record can quietly never be
+ * sent at all — which is a silent way to lose somebody's data.
+ */
+function pendingIds() {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch { return new Set(); }
+}
+
+function savePending(ids) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify([...ids])); } catch { /* fine */ }
+}
+
+/** Called by the app whenever a record is added, changed or removed. */
+export function markChanged(id) {
+  const ids = pendingIds();
+  ids.add(id);
+  savePending(ids);
+}
+
+export function markAllChanged(entries) {
+  savePending(new Set(entries.map((entry) => entry.id)));
+}
+
 /**
  * Send up what has changed here, then bring down what changed elsewhere.
  *
@@ -117,9 +155,14 @@ export async function syncNow(entries, save) {
 
   try {
     const since = lastSynced();
+    const pending = pendingIds();
 
-    // Only what this device has touched since it last spoke to the server.
-    const changed = entries.filter((entry) => (entry.updatedAt || entry.at || 0) > since);
+    /* On the very first exchange everything local is new to the household —
+       somebody may have used the app for weeks before signing in, and none of
+       that should be left behind. */
+    const changed = since === 0
+      ? entries.slice()
+      : entries.filter((entry) => pending.has(entry.id));
 
     if (changed.length > 0) {
       const sealed = [];
@@ -145,6 +188,12 @@ export async function syncNow(entries, save) {
       });
 
       if (!push.ok) return { synced: false, reason: `push-${push.status}` };
+
+      // Accepted. Anything still waiting stayed waiting because it was not in
+      // this batch, so it is kept rather than cleared wholesale.
+      const settled = new Set(sealed.map((record) => record.id));
+      const stillWaiting = new Set([...pending].filter((id) => !settled.has(id)));
+      savePending(stillWaiting);
     }
 
     const pull = await fetch(`/api/records?since=${since}`);
