@@ -217,6 +217,31 @@ const engine = runSuite('test-engine.mjs', 'The financial engine calculates corr
 const keys = runSuite('test-crypto.mjs', "A household's records are sealed to that household");
 const sharing = runSuite('test-sync.mjs', "A household's phones stay in step without losing anything");
 const instructions = runSuite('test-intent.mjs', 'A plan change said in words means what it says');
+const planning = runSuite('test-allocate.mjs', 'A plan can be built without asking what somebody spends');
+
+// The survey must never ask a household to price something they have never
+// counted. Asking assumes the answer this tool exists to uncover.
+const surveyJs = readFileSync(join(root, 'public', 'survey.js'), 'utf8');
+const ASKING_WHAT_THEY_SPEND =
+  /ask:\s*['"][^'"]*(how much (do you |does your household )?(spend|goes) on (food|groceries|travel|transport|eating))/i;
+
+if (ASKING_WHAT_THEY_SPEND.test(surveyJs)) {
+  fail(
+    'The survey never asks what somebody has never counted',
+    'public/survey.js asks a household to price everyday spending. Most do not know, the ones ' +
+    'who guess guess low, and discovering it is the point of the tool.'
+  );
+}
+
+// Points may only ever go up.
+const progressJs = readFileSync(join(root, 'public', 'progress.js'), 'utf8');
+if (/points\s*-=|points\s*=\s*[^;]*-\s*\w+|deduct|penal/i.test(progressJs)) {
+  fail(
+    'Nothing is ever taken away',
+    'public/progress.js appears to remove points. A household having a hard month must ' +
+    'never open this app and find itself punished.'
+  );
+}
 
 // The assistant may read a sentence, but the figures that result must come from
 // the engine. If intent.js starts doing arithmetic on a household's plan, the
@@ -318,6 +343,7 @@ if (failures.length === 0) {
   console.log((keys.stdout || '').trim());
   console.log((sharing.stdout || '').trim());
   console.log((instructions.stdout || '').trim());
+  console.log((planning.stdout || '').trim());
   process.exit(0);
 }
 

@@ -1,89 +1,133 @@
-/* Setting up without a bank statement.
+/* Getting to know a household.
  *
- * Plenty of households cannot produce a year of PDFs — statements come by post,
- * or scanned, or there is no net banking at all. Their money is no less worth
- * planning, so what the engine would have read from records is asked for
- * instead: one short question at a time, nothing compulsory, and no figure ever
- * invented on their behalf.
+ * The rule here, learned the hard way: never ask somebody what they spend on
+ * something they have never counted. "About how much goes on groceries?" assumes
+ * the answer this tool exists to uncover, and the honest reply is "I don't
+ * know" — which is precisely why they are here.
  *
- * The answers are theirs. Anything skipped stays unknown rather than becoming a
- * guess dressed up as a fact.
+ * So only two kinds of question are asked. Things that arrive as the same figure
+ * every month, which people know exactly: rent, the EMI, school fees, the
+ * premium. And things about the household itself: who lives there, how they get
+ * about, what they are working towards.
+ *
+ * Everything else — food, transport, the small daily leaks — Oikonomia estimates
+ * openly and says so. The month's real spending is what turns those estimates
+ * into knowledge. That gap is the whole point.
  */
 
 import { formatPaise, readRupees } from './money.js';
+import { t } from './i18n.js';
 
 const STORE = 'oikonomia.profile.v1';
 
-/* Asked in the order a household thinks about its own money: what comes in,
-   then the roof, then the things that must be paid, then the rest. */
+/* Each question is one a household can answer without counting anything. */
 const QUESTIONS = [
   {
-    id: 'income',
-    category: 'Income',
+    id: 'incomePaise',
+    kind: 'money',
     ask: 'How much money comes into your household in a month?',
-    help: 'Everything together — salary, wages, business, rent received, help from family. A rough figure is fine.',
-    placeholder: '72000',
+    help: 'Everything together — salary, wages, business, rent received, help from family. If it varies, give a normal month.',
+    placeholder: '30000',
     required: true
   },
   {
-    id: 'rent',
-    category: 'Rent',
+    id: 'incomeSteady',
+    kind: 'choice',
+    ask: 'Does that arrive steadily?',
+    help: 'It changes what kind of cushion makes sense for you.',
+    options: [
+      ['steady', 'The same every month'],
+      ['varies', 'It varies'],
+      ['irregular', 'Some months there is little or none']
+    ]
+  },
+  {
+    id: 'adults',
+    kind: 'count',
+    ask: 'How many adults live in your household?',
+    help: 'Everyone whose living costs come out of this money.',
+    placeholder: '2'
+  },
+  {
+    id: 'children',
+    kind: 'count',
+    ask: 'And how many children?',
+    help: 'Leave it blank if none.',
+    placeholder: '0'
+  },
+  {
+    id: 'rentPaise',
+    kind: 'money',
     ask: 'What do you pay for your home each month?',
-    help: 'Rent, or a home loan payment. Skip if you own it outright.'
+    help: 'Rent, or a home loan payment. Skip if you own it outright with nothing to pay.'
   },
   {
-    id: 'groceries',
-    category: 'Groceries',
-    ask: 'About how much goes on food and groceries in a month?',
-    help: 'Ration, vegetables, milk, the kirana shop.'
+    id: 'loanPaise',
+    kind: 'money',
+    ask: 'Do you have any loan or EMI payments?',
+    help: 'Bank loan, gold loan, vehicle, buy-now-pay-later, or money being repaid to family. Add them together.'
   },
   {
-    id: 'bills',
-    category: 'Bills',
-    ask: 'And on bills?',
-    help: 'Electricity, water, gas, phone and internet together.'
+    id: 'feesPaise',
+    kind: 'yearly',
+    ask: 'School or college fees?',
+    help: 'Give the yearly amount and Oikonomia will set aside a twelfth each month, so the term bill does not arrive as a shock.'
   },
   {
-    id: 'transport',
-    category: 'Transport',
-    ask: 'Getting to work and around?',
-    help: 'Bus, train, auto, petrol, whatever you use.'
-  },
-  {
-    id: 'education',
-    category: 'Education',
-    ask: 'School or college fees each month?',
-    help: 'If fees are paid once or twice a year, divide by twelve — Oikonomia will set that much aside monthly.'
-  },
-  {
-    id: 'loan',
-    category: 'Loan payment',
-    ask: 'Any loan or EMI payments?',
-    help: 'Bank loan, gold loan, buy-now-pay-later, or money being repaid to family.'
-  },
-  {
-    id: 'health',
-    category: 'Health',
-    ask: 'Medicines or regular treatment?',
-    help: 'Ongoing medicine, doctor visits, anything regular.'
-  },
-  {
-    id: 'insurance',
-    category: 'Insurance',
+    id: 'insurancePaise',
+    kind: 'yearly',
     ask: 'Insurance premiums?',
-    help: 'Life, health or vehicle. Again, a yearly premium divided by twelve.'
+    help: 'Life, health or vehicle, for the whole year. Skip if you have none — Oikonomia will mention it later.'
   },
   {
-    id: 'giving',
-    category: 'Giving',
-    ask: 'Do you give regularly?',
-    help: 'Church, charity, helping family or neighbours. Entirely your own decision — Oikonomia only makes room for it.'
+    id: 'travel',
+    kind: 'choice',
+    ask: 'How does your household usually get about?',
+    help: 'This shapes what Oikonomia expects travel to cost.',
+    options: [
+      ['walk', 'Mostly walking or cycling'],
+      ['public', 'Bus, train or shared auto'],
+      ['twowheeler', 'A two-wheeler'],
+      ['car', 'A car']
+    ]
   },
   {
-    id: 'saved',
-    category: null,
-    ask: 'Do you have anything set aside already?',
-    help: 'Savings, a fixed deposit, cash kept at home. This only helps judge how much of a cushion you still need.'
+    id: 'givingShare',
+    kind: 'choice',
+    ask: 'Do you set anything aside for giving?',
+    help: 'Church, charity, helping family or neighbours. This is entirely yours to decide — Oikonomia only makes room for whatever you choose.',
+    options: [
+      ['0.10', 'A tenth of what comes in'],
+      ['0.05', 'Around a twentieth'],
+      ['other', 'Something else — I will set it myself'],
+      ['0', 'Not at the moment']
+    ]
+  },
+  {
+    id: 'shortfall',
+    kind: 'choice',
+    ask: 'Be honest — how do most months end?',
+    help: 'Nobody sees this but you. It changes what Oikonomia suggests first.',
+    options: [
+      ['comfortable', 'There is usually something left'],
+      ['tight', 'It is tight but it works out'],
+      ['short', 'I often run out before the month does'],
+      ['borrow', 'I usually have to borrow']
+    ]
+  },
+  {
+    id: 'goal',
+    kind: 'choice',
+    ask: 'What would you most like money to do for you?',
+    help: 'Oikonomia will work towards this once the essentials are steady.',
+    options: [
+      ['cushion', 'Stop living so close to the edge'],
+      ['debt', 'Get out of debt'],
+      ['school', "Pay for children's education"],
+      ['home', 'A home of our own'],
+      ['family', 'Help family who need it'],
+      ['later', 'Something for later life']
+    ]
   }
 ];
 
@@ -110,25 +154,6 @@ export function clearProfile() {
   try { localStorage.removeItem(STORE); } catch { /* fine */ }
 }
 
-/** What the household said, in the shape the budget engine wants. */
-function toProfile() {
-  const commitments = [];
-
-  for (const question of QUESTIONS) {
-    if (!question.category || question.id === 'income') continue;
-    const paise = answers[question.id];
-    if (!paise) continue;
-    commitments.push({ label: question.ask, category: question.category, paise, everyMonth: true });
-  }
-
-  return {
-    incomePaise: answers.income || 0,
-    savedPaise: answers.saved || 0,
-    commitments,
-    answeredAt: Date.now()
-  };
-}
-
 /* ---------- the screen ---------- */
 
 function node(tag, className, text) {
@@ -153,29 +178,79 @@ function render(body) {
   bar.style.width = `${Math.round((step / QUESTIONS.length) * 100)}%`;
   progress.append(bar);
 
-  const heading = node('h3', 'survey-ask', question.ask);
-  const help = node('p', 'survey-help', question.help);
-
-  const field = node('label', 'field');
-  field.append(node('span', 'field-label', 'Amount each month'));
-
-  const wrap = node('div', 'amount-input');
-  wrap.append(node('span', 'amount-prefix', '₹'));
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.inputMode = 'decimal';
-  input.autocomplete = 'off';
-  input.placeholder = question.placeholder || '0';
-  if (answers[question.id]) input.value = String(answers[question.id] / 100);
-  wrap.append(input);
-  field.append(wrap);
+  body.append(progress);
+  body.append(node('h3', 'survey-ask', question.ask));
+  body.append(node('p', 'survey-help', question.help));
 
   const problem = node('p', 'form-error');
   problem.hidden = true;
 
-  const next = node('button', 'primary-action', step === QUESTIONS.length - 1 ? 'Finish' : 'Next');
-  next.type = 'button';
+  if (question.kind === 'choice') {
+    renderChoice(body, question, problem);
+    return;
+  }
+
+  renderNumber(body, question, problem);
+}
+
+/** A question answered by picking one of a few plain options. */
+function renderChoice(body, question, problem) {
+  const list = node('div', 'welcome-choices');
+
+  for (const [value, label] of question.options) {
+    const choice = node('button', 'welcome-choice', label);
+    choice.type = 'button';
+    if (String(answers[question.id]) === value) choice.dataset.chosen = 'true';
+
+    choice.addEventListener('click', () => {
+      if (value === 'other') {
+        answers[question.id] = 'other';
+      } else {
+        answers[question.id] = value;
+      }
+      step++;
+      render(body);
+    });
+
+    list.append(choice);
+  }
+
+  body.append(list, problem);
+
+  if (step > 0) body.append(backButton(body));
+}
+
+/** A question answered with a figure. */
+function renderNumber(body, question, problem) {
+  const field = node('label', 'field');
+  const isMoney = question.kind !== 'count';
+
+  if (isMoney) {
+    field.append(node('span', 'field-label',
+      question.kind === 'yearly' ? 'Amount for the whole year' : 'Amount each month'));
+  } else {
+    field.append(node('span', 'field-label', 'How many'));
+  }
+
+  const wrap = node('div', isMoney ? 'amount-input' : 'plain-input');
+  if (isMoney) wrap.append(node('span', 'amount-prefix', '₹'));
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.inputMode = isMoney ? 'decimal' : 'numeric';
+  input.autocomplete = 'off';
+  input.placeholder = question.placeholder || '';
+
+  const existing = answers[question.id];
+  if (existing !== undefined && existing !== null) {
+    input.value = isMoney
+      ? String((question.kind === 'yearly' ? existing * 12 : existing) / 100)
+      : String(existing);
+  }
+
+  wrap.append(input);
+  field.append(wrap);
+  body.append(field, problem);
 
   const accept = () => {
     const typed = input.value.trim();
@@ -188,7 +263,7 @@ function render(body) {
         return;
       }
       delete answers[question.id];
-    } else {
+    } else if (isMoney) {
       const paise = readRupees(typed);
       if (paise === null) {
         problem.textContent = 'Please enter an amount, like 5000.';
@@ -196,66 +271,91 @@ function render(body) {
         input.focus();
         return;
       }
-      answers[question.id] = paise;
+      // A yearly figure is carried as the monthly share of it.
+      answers[question.id] = question.kind === 'yearly' ? Math.round(paise / 12) : paise;
+    } else {
+      const count = Number(typed.replace(/\D/g, ''));
+      if (!Number.isFinite(count)) {
+        problem.textContent = 'Please enter a number.';
+        problem.hidden = false;
+        return;
+      }
+      answers[question.id] = count;
     }
 
     step++;
     render(body);
   };
 
+  const next = node('button', 'primary-action', step === QUESTIONS.length - 1 ? 'Finish' : 'Next');
+  next.type = 'button';
   next.addEventListener('click', accept);
+
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') { event.preventDefault(); accept(); }
   });
 
-  const skip = node('button', 'secondary-action full', question.required ? 'Back' : 'Not this one');
-  skip.type = 'button';
-  skip.addEventListener('click', () => {
-    if (question.required) { if (step > 0) step--; }
-    else { delete answers[question.id]; step++; }
-    render(body);
-  });
+  body.append(next);
 
-  body.append(progress, heading, help, field, problem, next);
-  if (step > 0 || !question.required) body.append(skip);
+  if (!question.required) {
+    const skip = node('button', 'secondary-action full', 'I do not have this');
+    skip.type = 'button';
+    skip.addEventListener('click', () => {
+      delete answers[question.id];
+      step++;
+      render(body);
+    });
+    body.append(skip);
+  }
+
+  if (step > 0) body.append(backButton(body));
 
   input.focus();
 }
 
-function renderSummary(body) {
-  const profile = toProfile();
-  const committed = profile.commitments.reduce((sum, item) => sum + item.paise, 0);
-  const left = profile.incomePaise - committed;
+function backButton(body) {
+  const back = node('button', 'link-action', 'Back');
+  back.type = 'button';
+  back.addEventListener('click', () => { if (step > 0) step--; render(body); });
+  return back;
+}
 
-  body.append(node('h3', 'survey-ask', 'This is what you told me'));
+/* ---------- what we now know ---------- */
+
+function renderSummary(body) {
+  // A share of income for giving, unless they said otherwise.
+  const profile = {
+    ...answers,
+    givingShare: answers.givingShare === 'other' ? 0
+      : Number(answers.givingShare ?? 0.10),
+    answeredAt: Date.now()
+  };
+
+  body.append(node('h3', 'survey-ask', 'That is all Oikonomia needs'));
   body.append(node('p', 'survey-help',
-    'Nothing here is estimated — these are your own figures. Change anything that looks wrong.'));
+    'It will not ask what you spend on food or travel, because most households have never ' +
+    'counted and a guess would only mislead you. Oikonomia will put a starting figure against ' +
+    'those, clearly marked as its own estimate. What you actually record this month is what ' +
+    'turns them into the truth — and seeing that is the point.'));
 
   const figures = node('dl', 'understood');
   const row = (label, value) => {
-    const line = node('div', 'figure-row');
-    line.append(node('dt', null, label));
-    line.append(node('dd', null, value));
-    figures.append(line);
+    const item = node('div', 'figure-row');
+    item.append(node('dt', null, label));
+    item.append(node('dd', null, value));
+    figures.append(item);
   };
 
-  row('Money coming in', formatPaise(profile.incomePaise));
-  row('What you must pay', formatPaise(committed));
-  row(left >= 0 ? 'Left over' : 'Short by', formatPaise(Math.abs(left)));
+  row('Money coming in', formatPaise(profile.incomePaise || 0));
+
+  const known = (profile.rentPaise || 0) + (profile.loanPaise || 0) +
+    (profile.feesPaise || 0) + (profile.insurancePaise || 0);
+  row('Fixed commitments', formatPaise(known));
+  row('Left to plan with', formatPaise(Math.max(0, (profile.incomePaise || 0) - known)));
+
   body.append(figures);
 
-  if (left < 0) {
-    const warn = node('div', 'verdict verdict-warn');
-    const wrapper = node('div');
-    wrapper.append(node('strong', null, 'This does not balance yet'));
-    wrapper.append(node('span', null,
-      'What you have told me comes to more than what comes in. That is worth looking at ' +
-      'together — and it is a gap in income, not a lapse in discipline.'));
-    warn.append(wrapper);
-    body.append(warn);
-  }
-
-  const make = node('button', 'primary-action', 'Make my plan');
+  const make = node('button', 'primary-action', 'Build my plan');
   make.type = 'button';
   make.addEventListener('click', () => {
     saveProfile(profile);
@@ -267,6 +367,7 @@ function renderSummary(body) {
   again.addEventListener('click', () => { step = 0; render(body); });
 
   body.append(make, again);
+  void t;
 }
 
 /* ---------- starting ---------- */
@@ -274,18 +375,6 @@ function renderSummary(body) {
 export function startSurvey(body, finished) {
   onFinish = finished || (() => {});
   step = 0;
-
-  const existing = loadProfile();
-  answers = {};
-
-  if (existing) {
-    answers.income = existing.incomePaise;
-    answers.saved = existing.savedPaise;
-    for (const commitment of existing.commitments || []) {
-      const question = QUESTIONS.find((item) => item.category === commitment.category);
-      if (question) answers[question.id] = commitment.paise;
-    }
-  }
-
+  answers = { ...(loadProfile() || {}) };
   render(body);
 }

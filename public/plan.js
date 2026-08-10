@@ -10,7 +10,8 @@
 
 import { formatPaise, readRupees } from './money.js';
 import { typicalMonth, financialState, monthName, recurringCosts } from './engine.js';
-import { buildBudget, buildFromProfile, adjustLine, compare } from './budget.js';
+import { buildBudget, adjustLine, compare } from './budget.js';
+import { allocate, SOURCE_ESTIMATE, howMuchIsKnown } from './allocate.js';
 import { principlesFor, categoryInfo } from './framework.js';
 import { startSurvey, loadProfile } from './survey.js';
 import { readInstruction, readWithAssistant, amountAfter } from './intent.js';
@@ -29,6 +30,13 @@ let onChanged = () => {};
 
 /* True while the household is being asked about itself instead of shown a plan. */
 let asking = false;
+
+/** The month a fresh plan is for. */
+function nextMonth() {
+  const now = new Date();
+  const then = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return `${then.getFullYear()}-${String(then.getMonth() + 1).padStart(2, '0')}`;
+}
 
 /* ---------- keeping the plan ---------- */
 
@@ -144,8 +152,15 @@ function planLines(budget, entries) {
     head.type = 'button';
 
     const left = node('div', 'plan-name');
-    left.append(node('span', null, line.id));
-    if (line.fixed) left.append(node('span', 'plan-tag', 'every month'));
+    left.append(node('span', null, categoryName(line.id)));
+
+    // A household should always be able to see which figures are its own and
+    // which are Oikonomia's guesses, without opening anything.
+    if (line.source === SOURCE_ESTIMATE) {
+      left.append(node('span', 'plan-tag plan-guess', 'still a guess'));
+    } else if (line.fixed) {
+      left.append(node('span', 'plan-tag', 'every month'));
+    }
 
     const right = node('div', 'plan-amounts');
     right.append(node('span', 'plan-planned', formatPaise(line.plannedPaise)));
@@ -308,7 +323,9 @@ function render() {
   if (asking) {
     startSurvey(ui.body, (profile) => {
       asking = false;
-      saveBudget(buildFromProfile(profile));
+      const fresh = allocate(profile);
+      fresh.month = nextMonth();
+      saveBudget(fresh);
       onChanged();
       render();
     });
@@ -357,9 +374,24 @@ function render() {
   ui.body.append(node('h3', 'import-title', `Your plan for ${monthName(budget.month)}`));
 
   if (budget.fromProfile) {
+    const known = howMuchIsKnown(budget);
+
     ui.body.append(node('p', 'understood-source',
-      'Built from what you told Oikonomia about your household. As you record what you ' +
-      'actually spend, it will learn the difference and offer to adjust.'));
+      known.estimated > 0
+        ? `${known.known} of these come from what you told Oikonomia. ${known.estimated} are its ` +
+          'own estimates, marked below — record what you actually spend and they become the truth.'
+        : 'Every figure here now comes from what your household actually does.'));
+
+    if (known.estimated > 0) {
+      const bar = node('div', 'known-meter');
+      const fill = node('div', 'known-fill');
+      fill.style.width = `${Math.round(known.share * 100)}%`;
+      bar.append(fill);
+
+      ui.body.append(bar);
+      ui.body.append(node('p', 'known-note',
+        `${Math.round(known.share * 100)}% of your plan is now real. The rest is still a guess.`));
+    }
   }
 
   const { list, comparison } = planLines(budget, entries);

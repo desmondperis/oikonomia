@@ -399,6 +399,106 @@ body {
 
 .dash-block { margin-bottom: 1.75rem; }
 
+/* ---------- keeping at it ---------- */
+
+.streak-row {
+  display: flex;
+  gap: .625rem;
+  margin-bottom: 1.75rem;
+}
+
+.streak {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .125rem;
+  padding: .875rem .5rem;
+  border-radius: .875rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  text-align: center;
+}
+
+.streak-wide { flex: 1.6; }
+
+.streak-figure {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.streak-label {
+  font-size: .6875rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.streak[data-standing="onTrack"] .streak-figure,
+.streak[data-standing="careful"] .streak-figure { color: var(--accent); }
+.streak[data-standing="quick"] .streak-figure { color: var(--gold); }
+.streak[data-standing="over"] .streak-figure { color: var(--danger); }
+
+.streak-alight { border-color: var(--gold); }
+
+/* how much of the plan is real yet */
+
+.known-meter {
+  height: .375rem;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+  margin: 0 0 .5rem;
+}
+
+.known-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width .4s ease-out;
+}
+
+.known-note {
+  margin: 0 0 1.5rem;
+  font-size: .8125rem;
+  color: var(--ink-faint);
+}
+
+.plan-guess {
+  color: var(--gold);
+}
+
+.plain-input input,
+.plain-input {
+  width: 100%;
+}
+
+.plain-input input {
+  min-height: var(--tap);
+  padding: 0 .875rem;
+  border: 1px solid var(--rule);
+  border-radius: .75rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.25rem;
+}
+
+.link-action {
+  display: block;
+  width: 100%;
+  margin-top: .75rem;
+  padding: .625rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: .9375rem;
+  cursor: pointer;
+}
+
 .dash-heading {
   margin: 0 0 .75rem;
   font-size: .8125rem;

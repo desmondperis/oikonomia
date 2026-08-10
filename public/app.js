@@ -31,6 +31,7 @@ import {
   listen, phoneCanListen, privateCanListen, privateVoiceWanted, setPrivateVoice
 } from './listen.js';
 import { financialState } from './engine.js';
+import { monthProgress, noticeProgress } from './progress.js';
 import { principlesFor } from './framework.js';
 import {
   t, categoryName, applyTo, getLanguage, setLanguage,
@@ -50,6 +51,13 @@ const ui = {
   headlineMeterFill: el('headline-meter-fill'),
   headlineMeterToday: el('headline-meter-today'),
   monthSpent: el('month-spent'),
+  dashProgress: el('dash-progress'),
+  streakFigure: el('streak-figure'),
+  streakLabel: el('streak-label'),
+  pointsFigure: el('points-figure'),
+  paceFigure: el('pace-figure'),
+  paceLabel: el('pace-label'),
+  openRecords: el('open-records'),
   dashCategories: el('dash-categories'),
   categoryList: el('category-list'),
   dashInsight: el('dash-insight'),
@@ -256,6 +264,63 @@ function renderCategories(comparison) {
   }
 }
 
+/* How the month reads, in three words rather than a lecture. */
+const PACE_WORDS = {
+  early:    ['Just started', 'this month'],
+  careful:  ['Careful', 'well within plan'],
+  onTrack:  ['On track', 'about right for the day'],
+  quick:    ['Going quickly', 'ahead of the plan'],
+  over:     ['Well ahead', 'of what was planned']
+};
+
+/**
+ * The streak, the points, and how the month is going.
+ *
+ * Shown together because the habit matters more than the restraint — especially
+ * in the first month, when most of the plan is still Oikonomia's guesswork and
+ * praising somebody for staying under a figure nobody knew would be hollow.
+ */
+function renderProgress(entries, budget) {
+  if (entries.length === 0) {
+    ui.dashProgress.hidden = true;
+    return;
+  }
+
+  const comparison = budget ? compare(budget, entries) : null;
+  const progress = monthProgress(entries, comparison);
+
+  ui.dashProgress.hidden = false;
+
+  ui.streakFigure.textContent = String(progress.streak);
+  ui.streakLabel.textContent = progress.streak === 1 ? 'day streak' : 'day streak';
+  ui.streakFigure.parentElement.classList.toggle('streak-alight', progress.streak >= 3);
+
+  ui.pointsFigure.textContent = String(progress.points);
+
+  if (progress.pace) {
+    const [word, note] = PACE_WORDS[progress.pace.standing] || PACE_WORDS.onTrack;
+    ui.paceFigure.textContent = word;
+    ui.paceLabel.textContent = note;
+    ui.paceFigure.parentElement.dataset.standing = progress.pace.standing;
+  } else {
+    ui.paceFigure.textContent = String(progress.recorded);
+    ui.paceLabel.textContent = 'recorded this month';
+    delete ui.paceFigure.parentElement.dataset.standing;
+  }
+}
+
+/** Notice anything earned, and say so once. */
+function celebrate() {
+  const budget = loadBudget();
+  const showing = live();
+  const comparison = budget ? compare(budget, showing) : null;
+
+  for (const won of noticeProgress(showing, budget, comparison)) {
+    showToast(`${won.text} · +${won.points}`);
+    break; // One at a time. Several at once is noise, not reward.
+  }
+}
+
 /** One observation, where there is genuinely one worth making. */
 function renderInsight(entries) {
   ui.dashInsight.replaceChildren();
@@ -366,6 +431,7 @@ function render() {
     }
   }
 
+  renderProgress(showing, budget);
   renderInsight(showing);
   renderNextStep(showing, budget);
 
@@ -739,6 +805,10 @@ function handleSubmit(event) {
   render();
   showToast(wasEditing ? t('add.updated') : t('add.added', { amount: formatPaise(paise) }));
   syncSoon(touched);
+
+  // A moment later, so the reward lands after the confirmation rather than
+  // fighting it for the same corner of the screen.
+  if (!wasEditing) setTimeout(celebrate, 2800);
 }
 
 /* ---------- taking in a statement ---------- */
@@ -1074,6 +1144,8 @@ ui.apiRemove.addEventListener('click', () => {
 ui.settingsLanguage.addEventListener('change', () => {
   rememberLanguage(ui.settingsLanguage.value);
 });
+
+ui.openRecords.addEventListener('click', () => showTab('records'));
 
 ui.settingsOpen.addEventListener('click', openSettingsSheet);
 ui.settingsClose.addEventListener('click', closeSettingsSheet);

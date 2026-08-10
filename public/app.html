@@ -150,6 +150,22 @@
       </div>
     </div>
 
+    <!-- keeping at it -->
+    <section id="dash-progress" class="streak-row" hidden>
+      <div class="streak">
+        <span class="streak-figure" id="streak-figure">0</span>
+        <span class="streak-label" id="streak-label">day streak</span>
+      </div>
+      <div class="streak">
+        <span class="streak-figure" id="points-figure">0</span>
+        <span class="streak-label">points</span>
+      </div>
+      <div class="streak streak-wide">
+        <span class="streak-figure" id="pace-figure">—</span>
+        <span class="streak-label" id="pace-label">this month</span>
+      </div>
+    </section>
+
     <!-- how each part of the plan is going -->
     <section id="dash-categories" class="dash-block" hidden>
       <h3 class="dash-heading" data-i18n="home.thisMonth">This month</h3>
@@ -253,6 +269,21 @@
   <!-- More -->
   <section id="more" class="tab-panel" hidden aria-labelledby="more-title">
     <h2 id="more-title" class="screen-title" data-i18n="more.title">More</h2>
+
+    <h3 class="section-heading" data-i18n="more.records">Bank statements</h3>
+
+    <p class="row-help" data-i18n="more.recordsNote">
+      Oikonomia works from what you record day to day. A statement can fill in
+      the past, but it cannot say what money was for — only you can.
+    </p>
+
+    <button type="button" id="open-records" class="row row-action">
+      <span class="row-main">
+        <span class="row-title" data-i18n="more.uploadStatement">Upload a bank statement</span>
+        <span class="row-note" data-i18n="more.uploadNote">PDF, Excel or CSV</span>
+      </span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+    </button>
 
     <h3 class="section-heading" data-i18n="more.household">Your household</h3>
     <div id="household-body"></div>
