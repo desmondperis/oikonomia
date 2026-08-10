@@ -67,9 +67,9 @@ function detectDelimiter(lines) {
  * Shared by delimited files and spreadsheets, which arrive as the same thing
  * once their wrapper has been taken off.
  */
-export function tableFromRows(grid) {
+export function tableFromRows(grid, extraPreamble = []) {
   if (!grid || grid.length === 0) {
-    return { columns: null, rows: [], preamble: [] };
+    return { columns: null, rows: [], preamble: extraPreamble };
   }
 
   // Banks put an account summary above the table, so the heading row is rarely
@@ -80,7 +80,7 @@ export function tableFromRows(grid) {
     return {
       columns: null,
       rows: [],
-      preamble: grid.map((cells) => cells.join(' ').trim())
+      preamble: [...extraPreamble, ...grid.map((cells) => cells.join(' ').trim())]
     };
   }
 
@@ -95,9 +95,10 @@ export function tableFromRows(grid) {
     .slice(headerIndex + 1)
     .map((cells) => columns.map((_, index) => String(cells[index] ?? '').trim()));
 
-  const preamble = grid
-    .slice(0, headerIndex)
-    .map((cells) => cells.join(' ').trim());
+  const preamble = [
+    ...extraPreamble,
+    ...grid.slice(0, headerIndex).map((cells) => cells.join(' ').trim())
+  ];
 
   return { columns, rows, preamble };
 }

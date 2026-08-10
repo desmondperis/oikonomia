@@ -8,6 +8,7 @@
 
 import { formatPaise } from './money.js';
 import { readDelimited } from './statements/csv.js';
+import { readFixedWidth } from './statements/fixed.js';
 import { toTable } from './statements/table.js';
 import { readStatement } from './statements/statement.js';
 import { identifyBank, findAccountEnding } from './statements/banks.js';
@@ -120,7 +121,14 @@ async function readOne(job) {
         ui.workingMessage.textContent = `Opening ${job.file.name}…`;
         table = await readSpreadsheet(job.file);
       } else {
-        table = readDelimited(await job.file.text());
+        const text = await job.file.text();
+        table = readDelimited(text);
+
+        // Several banks mean fixed-width columns when they offer "text".
+        if (!table.columns) {
+          const fixed = readFixedWidth(text);
+          if (fixed.columns) table = fixed;
+        }
       }
 
       const result = readStatement(table);

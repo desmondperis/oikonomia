@@ -9,6 +9,7 @@
 
 import { readAmount, readDate, readColumnRole } from '../public/statements/fields.js';
 import { readDelimited } from '../public/statements/csv.js';
+import { readFixedWidth } from '../public/statements/fixed.js';
 import { toTable } from '../public/statements/table.js';
 import { readStatement } from '../public/statements/statement.js';
 import { identifyBank, findAccountEnding } from '../public/statements/banks.js';
@@ -211,6 +212,44 @@ S No.,Transaction Date,Transaction Remarks,Withdrawal Amount(INR),Deposit Amount
   check('a real misreading is not tidied away', result.verification.confident, false);
 }
 
+/* ---------- money in and money out the wrong way round ---------- */
+
+/* From a real Axis export. That bank's CSV and its own spreadsheet of the same
+   account place the same amount in opposite columns; one of them must be wrong,
+   and the running balance says which. The headings are not the authority — the
+   balance is. */
+const swapped = `Statement of Account No - 918010040751712
+Tran Date,CHQNO,PARTICULARS,DR,CR,BAL,SOL
+14-08-2025,-,UPI/P2M/650586372265/Google Pl, ,130.00,2836.28,2685
+21-08-2025,-,UPI/P2A/523397572943/AKASH VER,915.00, ,3751.28,2685
+28-08-2025,-,UPI/P2M/524008387185/Policybaz, ,1949.00,1802.28,2685`;
+
+{
+  const result = readStatement(readDelimited(swapped));
+
+  check('swapped: it reconciles once turned round', result.verification.confident, true);
+  check('swapped: and says so', result.swappedColumns, true);
+
+  // The column marked DR held the money going out, so the first row — marked CR
+  // — is what actually left the account.
+  check('swapped: the first row is money out', result.transactions[0].direction, 'debit');
+  check('swapped: the second is money in', result.transactions[1].direction, 'credit');
+  check('swapped: money out totals correctly', result.summary.debits, 13000 + 194900);
+  check('swapped: money in totals correctly', result.summary.credits, 91500);
+}
+
+{
+  // A statement that reads correctly must never be turned round.
+  const straight = `Account No 1
+Date,Narration,Withdrawal Amt.,Deposit Amt.,Closing Balance
+04/07/26,SWIGGY,620.00,,45380.00
+05/07/26,SALARY,,72000.00,117380.00`;
+
+  const result = readStatement(readDelimited(straight));
+  check('a correct statement is left alone', result.swappedColumns, false);
+  check('and still reconciles', result.verification.confident, true);
+}
+
 /* ---------- a misread amount must be caught, not imported ---------- */
 
 const broken = `HDFC BANK LTD
@@ -269,6 +308,40 @@ const pdfItems = [
   );
   check('pdf: lakh grouping in balance', result.transactions[1].balancePaise, 11738000);
   check('pdf: balance reconciles', result.verification.confident, true);
+}
+
+/* ---------- a statement printed in columns of spaces ---------- */
+
+/* HDFC's "text" download, which is not delimited at all: fixed-width columns
+   framed by rules, with the headings between them, and long narrations wrapping
+   onto a second line. */
+const fixedWidth = [
+  'HDFC BANK Ltd.                          Statement of accounts',
+  '                                        Account No     : 50100860651340',
+  '',
+  '--------  ------------------------------  ----------------  --------  ------------------  ------------------  ------------------',
+  'Date      Narration\t\t\t  Chq./Ref.No.      Value Dt  Withdrawal Amt.        Deposit Amt.     Closing Balance',
+  '--------  ------------------------------  ----------------  --------  ------------------  ------------------  ------------------',
+  '',
+  '14/07/26  NEFT CR-ICIC0SF0002-DESMOND P  IN12619546452236  14/07/26                                580.78              580.78   ',
+  '          ERIS-IN12619546452236                                                                                                  ',
+  '14/07/26  CHEQUE BK CHGS INCL GST 04-07  EPR2719520682664  14/07/26              70.80                                 509.98   '
+].join('\n');
+
+{
+  const table = readFixedWidth(fixedWidth);
+  const result = readStatement(table);
+
+  check('fixed width: the columns are found', Boolean(table.columns), true);
+  check('fixed width: recognised as HDFC',
+    identifyBank(table.preamble, table.columns).name, 'HDFC Bank');
+  check('fixed width: transactions read', result.transactions.length, 2);
+  check('fixed width: the credit is a credit', result.transactions[0].direction, 'credit');
+  check('fixed width: amount read', result.transactions[0].paise, 58078);
+  check('fixed width: the charge is a debit', result.transactions[1].direction, 'debit');
+  check('fixed width: wrapped narration joined',
+    result.transactions[0].description.includes('ERIS'), true);
+  check('fixed width: balance reconciles', result.verification.confident, true);
 }
 
 /* ---------- a file we cannot read must say so ---------- */

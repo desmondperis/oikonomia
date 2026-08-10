@@ -166,7 +166,8 @@ const COLUMN_ROLES = [
   ['credit',      ['credit', 'deposit', 'deposits', 'deposit amt',
                    'deposit (cr)', 'paid in', 'cr']],
   ['amount',      ['amount', 'transaction amount', 'amt']],
-  ['balance',     ['balance', 'closing balance', 'running balance', 'balance (inr)']]
+  // 'bal' because Axis heads the column exactly that.
+  ['balance',     ['balance', 'closing balance', 'running balance', 'balance (inr)', 'bal']]
 ];
 
 /** Work out what a heading means. Returns a role name, or null. */

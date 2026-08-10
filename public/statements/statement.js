@@ -276,16 +276,48 @@ export function summarise(transactions) {
 }
 
 /** The whole job: a table in, a checked statement out. */
+/** A copy, so verifying one reading cannot alter another. */
+function copyOf(transactions) {
+  return transactions.map((item) => ({ ...item }));
+}
+
 export function readStatement(table) {
   const { transactions, skipped, reason } = readTransactions(table);
 
   /* Same-day rows are put back into the order the balance says they happened
      before anything is checked, because a bank printing two transactions out of
      sequence is not the same thing as us misreading them. */
-  const ordered = reorderSameDay(transactions);
+  let used = reorderSameDay(copyOf(transactions));
+  let verification = verifyAgainstBalance(used);
+  let swappedColumns = false;
 
-  const verification = verifyAgainstBalance(ordered);
-  const summary = summarise(ordered);
+  /* If almost nothing reconciles, the likeliest explanation is not that every
+     figure was misread but that money in and money out are the wrong way round.
+     Real exports do this: one bank's CSV and its own spreadsheet of the same
+     account place the same amount in opposite columns, and some label the
+     columns from the bank's point of view rather than the household's.
 
-  return { transactions: ordered, skipped, verification, summary, reason };
+     So the reading is tried the other way and kept only if the bank's own
+     running balance agrees with it better. The balance decides, not the
+     headings — which is the same rule the rest of this file follows. */
+  if (!verification.confident && verification.checked > 0) {
+    const flipped = reorderSameDay(copyOf(transactions).map((item) => ({
+      ...item,
+      direction: item.direction === 'credit' ? 'debit'
+        : item.direction === 'debit' ? 'credit'
+          : null
+    })));
+
+    const second = verifyAgainstBalance(flipped);
+
+    if (second.matched > verification.matched) {
+      used = flipped;
+      verification = second;
+      swappedColumns = true;
+    }
+  }
+
+  const summary = summarise(used);
+
+  return { transactions: used, skipped, verification, summary, reason, swappedColumns };
 }
