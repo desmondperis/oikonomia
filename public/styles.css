@@ -814,6 +814,24 @@ body {
 
 .muted { color: var(--ink-faint); font-weight: 400; }
 
+/* ---------- changing the plan in words ---------- */
+
+.plan-ask {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.125rem 1.125rem;
+  border-radius: .875rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+}
+
+.plan-ask-lead {
+  margin: 0 0 .75rem;
+  font-size: .9375rem;
+  color: var(--ink-soft);
+}
+
+.plan-ask .ask-form { margin-bottom: 0; }
+
 /* ---------- the twelve words ---------- */
 
 .phrase-why {

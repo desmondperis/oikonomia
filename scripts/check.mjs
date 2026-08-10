@@ -216,6 +216,19 @@ const statements = runSuite('test-statements.mjs', 'Bank statements are read cor
 const engine = runSuite('test-engine.mjs', 'The financial engine calculates correctly');
 const keys = runSuite('test-crypto.mjs', "A household's records are sealed to that household");
 const sharing = runSuite('test-sync.mjs', "A household's phones stay in step without losing anything");
+const instructions = runSuite('test-intent.mjs', 'A plan change said in words means what it says');
+
+// The assistant may read a sentence, but the figures that result must come from
+// the engine. If intent.js starts doing arithmetic on a household's plan, the
+// line between understanding and deciding has moved.
+const intentJs = readFileSync(join(root, 'public', 'intent.js'), 'utf8');
+if (/compare\(|buildBudget|typicalMonth|financialState/.test(intentJs)) {
+  fail(
+    'Understanding a sentence is not the same as deciding a budget',
+    'public/intent.js reaches into the budget engine. It should name a category, a ' +
+    'direction and an amount, and let the engine work out what that costs.'
+  );
+}
 
 // The server may never be handed a readable record. If any of these appear in
 // what sync sends, something is leaving the device in the clear.
@@ -304,6 +317,7 @@ if (failures.length === 0) {
   console.log((engine.stdout || '').trim());
   console.log((keys.stdout || '').trim());
   console.log((sharing.stdout || '').trim());
+  console.log((instructions.stdout || '').trim());
   process.exit(0);
 }
 

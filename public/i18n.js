@@ -105,6 +105,15 @@ const WORDS = {
   'plan.tellUsAgain':    ['Tell Oikonomia about your household again', 'अपने घर के बारे में दोबारा बताएँ'],
   'plan.nothingYet':     ['Nothing to go on yet. Oikonomia can learn your household from bank statements — or you can simply tell it, which takes about two minutes.',
                           'अभी कुछ नहीं है। ओइकोनोमिया बैंक स्टेटमेंट से आपके घर को समझ सकता है — या आप बस बता दें, दो मिनट लगेंगे।'],
+  'plan.tellLead':       ['Tell me what to change, in your own words.', 'अपने शब्दों में बताएँ क्या बदलना है।'],
+  'plan.tellPlaceholder':['Increase groceries to 9000', 'राशन 9000 कर दें'],
+  'plan.tellAction':     ['Change the plan', 'योजना बदलें'],
+  'plan.thinking':       ['One moment…', 'एक पल…'],
+  'plan.notUnderstood':  ['I did not follow that. Try naming one thing and one amount — "increase groceries to 9000".',
+                          'मैं समझ नहीं पाया। एक चीज़ और एक रकम बताएँ — "राशन 9000 कर दें"।'],
+  'plan.noSuchLine':     ['There is no {category} in your plan yet. Add a spend in that category first, or change it by hand below.',
+                          'आपकी योजना में अभी {category} नहीं है। पहले उस श्रेणी में कोई खर्च जोड़ें, या नीचे से खुद बदलें।'],
+  'plan.changed':        ['{category} is now {amount}.', '{category} अब {amount} है।'],
 
   /* ---------- asking ---------- */
   'ask.title':           ['Ask Oikonomia', 'ओइकोनोमिया से पूछें'],

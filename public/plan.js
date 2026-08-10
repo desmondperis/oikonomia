@@ -13,6 +13,8 @@ import { typicalMonth, financialState, monthName, recurringCosts } from './engin
 import { buildBudget, buildFromProfile, adjustLine, compare } from './budget.js';
 import { principlesFor, categoryInfo } from './framework.js';
 import { startSurvey, loadProfile } from './survey.js';
+import { readInstruction, readWithAssistant, amountAfter } from './intent.js';
+import { t, categoryName } from './i18n.js';
 
 const STORE = 'oikonomia.budget.v1';
 
@@ -211,6 +213,90 @@ function planLines(budget, entries) {
   return { list, comparison };
 }
 
+/* ---------- changing the plan by saying so ---------- */
+
+/**
+ * A box for telling Oikonomia what to change.
+ *
+ * The sentence is understood; the figures are not taken from it. What the change
+ * comes to, and what it costs elsewhere, is worked out by the budget engine and
+ * shown before it is kept.
+ */
+function askBox(budget, entries) {
+  const box = node('div', 'plan-ask');
+
+  const field = node('div', 'ask-form');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.autocomplete = 'off';
+  input.placeholder = t('plan.tellPlaceholder');
+  field.append(input);
+
+  const go = node('button', 'primary-action ask-send', '→');
+  go.type = 'button';
+  go.setAttribute('aria-label', t('plan.tellAction'));
+  field.append(go);
+
+  const said = node('p', 'plan-consequence');
+  said.hidden = true;
+
+  const show = (message) => { said.textContent = message; said.hidden = false; };
+
+  const apply = async () => {
+    const sentence = input.value.trim();
+    if (!sentence) return;
+
+    go.disabled = true;
+    show(t('plan.thinking'));
+
+    // Ordinary rules first; the assistant only for a sentence they cannot read.
+    let instruction = readInstruction(sentence);
+    if (!instruction) instruction = await readWithAssistant(sentence);
+
+    go.disabled = false;
+
+    if (!instruction) {
+      show(t('plan.notUnderstood'));
+      return;
+    }
+
+    const line = budget.lines.find((entry) => entry.id === instruction.category);
+
+    if (!line) {
+      show(t('plan.noSuchLine', { category: categoryName(instruction.category) }));
+      return;
+    }
+
+    const wanted = amountAfter(instruction, line.plannedPaise);
+    const { budget: next, consequence } = adjustLine(budget, instruction.category, wanted);
+
+    saveBudget(next);
+    onChanged();
+    render();
+
+    // Say what was done and what it costs, in that order.
+    const done = t('plan.changed', {
+      category: categoryName(instruction.category),
+      amount: formatPaise(wanted)
+    });
+
+    const body = ui.body.querySelector('.plan-consequence');
+    if (body) {
+      body.textContent = consequence ? `${done} ${consequence.text}` : done;
+      body.hidden = false;
+    }
+  };
+
+  go.addEventListener('click', apply);
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); apply(); }
+  });
+
+  box.append(node('p', 'plan-ask-lead', t('plan.tellLead')), field, said);
+  void entries;
+  return box;
+}
+
 /* ---------- putting the screen together ---------- */
 
 function render() {
@@ -295,6 +381,8 @@ function render() {
     box.append(wrapper);
     ui.body.append(box);
   }
+
+  ui.body.append(askBox(budget, entries));
 
   ui.body.append(node('p', 'import-note', 'Tap any line to see why it is set there, and to change it.'));
   ui.body.append(list);

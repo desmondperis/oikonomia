@@ -11,6 +11,7 @@
  */
 
 import { categoryInfo, isEssential, isSpending, PRIORITIES } from './framework.js';
+import { formatPaise } from './money.js';
 import { typicalMonth, recurringCosts, thisMonth, financialState, monthKey } from './engine.js';
 
 /* How far a flexible category may be cut in one go. Halving someone's food
@@ -53,7 +54,7 @@ export function buildBudget(entries, options = {}) {
       typicalPaise: amount,
       plannedPaise: amount,
       basis: commitment
-        ? `You pay this every month — about ${'₹'}${Math.round(commitment.typicalPaise / 100)}.`
+        ? `You pay this every month — about ${formatPaise(commitment.typicalPaise)}.`
         : `What you usually spend across ${typical.monthsUsed} month${typical.monthsUsed === 1 ? '' : 's'}.`
     });
   }
@@ -328,8 +329,8 @@ export function adjustLine(budget, id, newPlannedPaise) {
       paise: over,
       candidates: candidates.slice(0, 3).map((entry) => entry.id),
       text: candidates.length > 0
-        ? `That puts the month over by ₹${Math.round(over / 100)}. It would need to come out of ${candidates.slice(0, 2).map((entry) => entry.id.toLowerCase()).join(' or ')}.`
-        : `That puts the month over by ₹${Math.round(over / 100)}, and there is no flexible spending left to take it from.`
+        ? `That puts the month over by ${formatPaise(over)}. It would need to come out of ${candidates.slice(0, 2).map((entry) => entry.id.toLowerCase()).join(' or ')}.`
+        : `That puts the month over by ${formatPaise(over)}, and there is no flexible spending left to take it from.`
     }
   };
 }
