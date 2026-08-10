@@ -13,6 +13,7 @@
     "deploy": "npm run build && node scripts/clean-fixtures.mjs && wrangler pages deploy public --project-name oikonomia --branch main"
   },
   "devDependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@tesseract.js-data/eng": "^1.0.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.2.108",

@@ -193,6 +193,15 @@ const WORDS = {
   'sync.status':         ['Sharing with your household', 'आपके घर के साथ साझा'],
   'sync.notSharing':     ['Only on this phone', 'सिर्फ़ इस फ़ोन पर'],
 
+  /* ---------- hearing an expense ---------- */
+  'voice.private':       ['Voice recognition', 'आवाज़ पहचान'],
+  'voice.privateNote':   ["Your phone's own is instant. On-device keeps recordings private but downloads about 40 MB once, and is slower.",
+                          'फ़ोन का अपना तुरंत काम करता है। इस फ़ोन पर वाला रिकॉर्डिंग निजी रखता है, पर एक बार लगभग 40 MB उतरता है और धीमा है।'],
+  'voice.phone':         ["Phone's own (instant)", 'फ़ोन का अपना (तुरंत)'],
+  'voice.onDevice':      ['On this phone (private)', 'इसी फ़ोन पर (निजी)'],
+  'voice.downloading':   ['Getting ready… {percent}%', 'तैयार हो रहा है… {percent}%'],
+  'voice.thinking':      ['Working out what you said…', 'आपने क्या कहा, समझ रहा हूँ…'],
+
   /* ---------- settings ---------- */
   'settings.title':      ['Settings', 'सेटिंग'],
   'settings.close':      ['Close', 'बंद करें'],

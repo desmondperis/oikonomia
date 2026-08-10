@@ -27,6 +27,13 @@ const FILES = [
   // Excel files, modern ones, and HTML tables wearing an .xls name.
   ['xlsx/xlsx.mjs', 'xlsx.mjs'],
 
+  // Hearing an expense without the recording leaving the phone. The library is
+  // ours; the model weights are fetched from Hugging Face when somebody turns
+  // this on, because a file that size cannot be served from our own hosting.
+  // The bundled build, not the "web" one: that names its dependencies rather
+  // than including them, and a browser loading it directly cannot resolve them.
+  ['@huggingface/transformers/dist/transformers.min.js', 'transformers.min.js'],
+
   // Reading a scanned page, character by character.
   ['tesseract.js/dist/tesseract.esm.min.js', 'tesseract.esm.min.js'],
   ['tesseract.js/dist/worker.min.js', 'tesseract-worker.min.js'],

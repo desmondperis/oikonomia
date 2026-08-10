@@ -27,6 +27,9 @@ import {
   syncNow, unlock, isUnlocked, storedPhrase, forgetPhrase,
   resyncFromScratch, markChanged, markAllChanged
 } from './sync.js';
+import {
+  listen, phoneCanListen, privateCanListen, privateVoiceWanted, setPrivateVoice
+} from './listen.js';
 import { financialState } from './engine.js';
 import { principlesFor } from './framework.js';
 import {
@@ -79,6 +82,8 @@ const ui = {
   settingsOpen: el('settings-open'),
   settingsClose: el('settings-close'),
   themeChoice: el('theme-choice'),
+  privateVoiceRow: el('private-voice-row'),
+  privateVoice: el('private-voice'),
   signedInAs: el('signed-in-as'),
   eraseAll: el('erase-all'),
   apiKey: el('api-key'),
@@ -466,15 +471,12 @@ function removeEntry(id) {
 
 /* ---------- speaking an expense ---------- */
 
-const SpeechRecognition =
-  window.SpeechRecognition || window.webkitSpeechRecognition || null;
-
-let recognition = null;
+let session = null;
 let listening = false;
 let listenGuard = null;
 
 function voiceSupported() {
-  return SpeechRecognition !== null;
+  return phoneCanListen() || privateCanListen();
 }
 
 function setVoiceState(state, label) {
@@ -491,8 +493,8 @@ function stopListening() {
   listening = false;
   clearTimeout(listenGuard);
   setVoiceState('idle', t('add.speak'));
-  if (recognition) {
-    try { recognition.stop(); } catch { /* already stopped */ }
+  if (session) {
+    try { session.stop(); } catch { /* already stopped */ }
   }
 }
 
@@ -530,48 +532,52 @@ function escapeHtml(text) {
   return box.innerHTML;
 }
 
-function startListening() {
+const TROUBLE = {
+  'not-allowed': 'Your phone blocked the microphone. Allow it in your browser settings, or type it below.',
+  'service-not-allowed': 'Your phone blocked the microphone. Allow it in your browser settings, or type it below.',
+  'no-speech': "I didn't hear anything. Try again, or type it below.",
+  'audio-capture': "I couldn't reach the microphone. Type it below instead.",
+  'network': 'Speaking needs a connection. Type it below instead.',
+  'could-not-start': "Couldn't start listening. Type it below instead."
+};
+
+async function startListening() {
   if (listening) { stopListening(); return; }
 
-  recognition = new SpeechRecognition();
-  recognition.lang = language;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-  recognition.continuous = false;
+  ui.voiceHeard.hidden = true;
 
-  recognition.onresult = (event) => {
-    const transcript = event.results?.[0]?.[0]?.transcript ?? '';
-    stopListening();
-    if (transcript.trim()) applyHeard(transcript);
-    else showHeard("I didn't hear anything. Try again, or type it below.");
-  };
+  session = listen(language, {
+    onState: (state) => {
+      if (state === 'thinking') setVoiceState('listening', t('voice.thinking'));
+    },
+    // Forty megabytes with no sign of progress is indistinguishable from a hang.
+    onProgress: (percent) => setVoiceState('listening', t('voice.downloading', { percent }))
+  });
 
-  recognition.onerror = (event) => {
-    stopListening();
-    const message = {
-      'not-allowed': 'Your phone blocked the microphone. Allow it in your browser settings, or type it below.',
-      'service-not-allowed': 'Your phone blocked the microphone. Allow it in your browser settings, or type it below.',
-      'no-speech': "I didn't hear anything. Try again, or type it below.",
-      'audio-capture': "I couldn't reach the microphone. Type it below instead.",
-      'network': 'Speaking needs a connection. Type it below instead.'
-    }[event.error] || "That didn't work. Type it below instead.";
-    showHeard(message);
-  };
-
-  recognition.onend = () => { if (listening) stopListening(); };
-
-  try {
-    recognition.start();
-    listening = true;
-    setVoiceState('listening', t('add.listening'));
-    ui.voiceHeard.hidden = true;
-
-    // Some Android builds never fire onend. Never leave it listening forever.
-    listenGuard = setTimeout(stopListening, 12000);
-  } catch {
-    stopListening();
-    showHeard("Couldn't start listening. Type it below instead.");
+  if (!session) {
+    showHeard(TROUBLE['could-not-start']);
+    return;
   }
+
+  listening = true;
+  setVoiceState('listening', t('add.listening'));
+
+  // Some Android builds never say they have finished. Never listen for ever.
+  listenGuard = setTimeout(stopListening, 30000);
+
+  const result = await session.heard;
+
+  listening = false;
+  clearTimeout(listenGuard);
+  setVoiceState('idle', t('add.speak'));
+
+  if (result.error) {
+    showHeard(TROUBLE[result.error] || "That didn't work. Type it below instead.");
+    return;
+  }
+
+  if (result.text && result.text.trim()) applyHeard(result.text);
+  else showHeard("I didn't hear anything. Try again, or type it below.");
 }
 
 /* ---------- the add sheet ---------- */
@@ -953,6 +959,10 @@ function openSettingsSheet() {
   ui.settingsLanguage.value = language;
   ui.themeChoice.value = loadTheme();
 
+  // Only offered where the phone can actually do it.
+  ui.privateVoiceRow.hidden = !privateCanListen();
+  ui.privateVoice.value = privateVoiceWanted() ? 'yes' : 'no';
+
   const session = getSession();
   ui.signedInAs.textContent = session.signedIn && session.user
     ? t('settings.signedInAs', { email: session.user.email })
@@ -1069,6 +1079,10 @@ ui.settingsOpen.addEventListener('click', openSettingsSheet);
 ui.settingsClose.addEventListener('click', closeSettingsSheet);
 
 ui.themeChoice.addEventListener('change', () => rememberTheme(ui.themeChoice.value));
+
+ui.privateVoice.addEventListener('change', () => {
+  setPrivateVoice(ui.privateVoice.value === 'yes');
+});
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !ui.settingsSheet.hidden) closeSettingsSheet();
