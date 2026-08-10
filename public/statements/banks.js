@@ -16,13 +16,55 @@ const BANKS = [
   { id: 'kotak', name: 'Kotak Mahindra Bank', patterns: [/kotak/i] }
 ];
 
-/** Identify the bank from anything printed above the transaction table. */
-export function identifyBank(preambleLines) {
+/* Some exports never name the bank anywhere — ICICI's does not — but the exact
+   wording of its column headings is as good as a signature. */
+const BY_HEADINGS = [
+  {
+    id: 'icici',
+    name: 'ICICI Bank',
+    needs: [/transaction remarks/i, /withdrawal amount/i, /deposit amount/i]
+  },
+  {
+    id: 'hdfc',
+    name: 'HDFC Bank',
+    needs: [/narration/i, /withdrawal amt/i, /closing balance/i]
+  },
+  {
+    id: 'sbi',
+    name: 'State Bank of India',
+    needs: [/txn date/i, /ref no\.?\/cheque/i]
+  },
+  {
+    id: 'bob',
+    name: 'Bank of Baroda',
+    needs: [/transaction date/i, /cheque number/i, /^description$/i]
+  }
+];
+
+/**
+ * Identify the bank.
+ *
+ * From whatever is printed above the table where possible; otherwise from the
+ * headings themselves, since a household should not be told "your bank" about a
+ * statement that plainly came from somewhere in particular.
+ */
+export function identifyBank(preambleLines, columns = null) {
   const text = (preambleLines || []).join('\n');
 
   for (const bank of BANKS) {
     if (bank.patterns.some((pattern) => pattern.test(text))) {
       return { id: bank.id, name: bank.name };
+    }
+  }
+
+  if (columns) {
+    const headings = columns.map((column) => String(column.heading || ''));
+
+    for (const bank of BY_HEADINGS) {
+      const matches = bank.needs.every((pattern) =>
+        headings.some((heading) => pattern.test(heading))
+      );
+      if (matches) return { id: bank.id, name: bank.name };
     }
   }
 

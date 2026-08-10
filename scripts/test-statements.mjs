@@ -80,7 +80,7 @@ Date,Narration,Chq./Ref.No.,Value Dt,Withdrawal Amt.,Deposit Amt.,Closing Balanc
   const table = readDelimited(hdfc);
   const result = readStatement(table);
 
-  check('hdfc: bank identified', identifyBank(table.preamble).name, 'HDFC Bank');
+  check('hdfc: bank identified', identifyBank(table.preamble, table.columns).name, 'HDFC Bank');
   check('hdfc: account ending', findAccountEnding(table.preamble), '6789');
   check('hdfc: transaction count', result.transactions.length, 3);
   check('hdfc: first is a debit', result.transactions[0].direction, 'debit');
@@ -165,6 +165,52 @@ Sl. No.,Transaction Date,Value Date,Description,Cheque Number,Debit,Credit,Balan
   check('bob: balance reconciles', result.verification.confident, true);
 }
 
+/* ---------- same-day rows the bank printed out of order ---------- */
+
+/* From a real ICICI statement. Two identical ₹20,000 withdrawals on one day,
+   listed in an order where the balance falls by forty thousand and then rises
+   by twenty — impossible as printed, correct once the two are swapped. */
+const outOfOrder = `DETAILED STATEMENT
+Account Number,,732901500566 ( INR )
+S No.,Value Date,Transaction Date,Cheque Number,Transaction Remarks,Withdrawal Amount(INR),Deposit Amount(INR),Balance(INR)
+1,14/07/2026,14/07/2026,,UPI/BLINKIT/blinkit949346./Pay via,741.00,0.00,55631.67
+2,15/07/2026,15/07/2026,,ACH/FIN NSE Clearing Lim/ICIC70331,20000.00,0.00,15631.67
+3,15/07/2026,15/07/2026,,ACH/FIN NSE Clearing Lim/ICIC70331,20000.00,0.00,35631.67
+4,15/07/2026,15/07/2026,,UPI/Epicah Mal/paytm.d1368897/Sent,20.00,0.00,15611.67`;
+
+{
+  const table = readDelimited(outOfOrder);
+  const result = readStatement(table);
+
+  check('out of order: every row is kept', result.transactions.length, 4);
+  check('out of order: it reconciles once reordered', result.verification.confident, true);
+  check('out of order: nothing is left unexplained', result.verification.mismatches.length, 0);
+
+  // Put back into the order the balance says they happened.
+  check('out of order: the balances now run in sequence',
+    result.transactions.map((item) => item.balancePaise),
+    [5563167, 3563167, 1563167, 1561167]);
+
+  check('out of order: the total is unchanged', result.summary.debits, 741_00 + 2000000 + 2000000 + 2000);
+
+  // A statement that names no bank is still recognised by its own headings.
+  check('out of order: recognised from its headings alone',
+    identifyBank(table.preamble, table.columns).name, 'ICICI Bank');
+}
+
+{
+  // Genuine misreading must still be caught. Same shape, but no order of these
+  // rows can produce the balances shown.
+  const broken = `Account Number,,000
+S No.,Transaction Date,Transaction Remarks,Withdrawal Amount(INR),Deposit Amount(INR),Balance(INR)
+1,14/07/2026,BLINKIT,741.00,0.00,55631.67
+2,15/07/2026,ACH ONE,20000.00,0.00,15631.67
+3,15/07/2026,ACH TWO,20000.00,0.00,33333.33`;
+
+  const result = readStatement(readDelimited(broken));
+  check('a real misreading is not tidied away', result.verification.confident, false);
+}
+
 /* ---------- a misread amount must be caught, not imported ---------- */
 
 const broken = `HDFC BANK LTD
@@ -212,7 +258,7 @@ const pdfItems = [
   const result = readStatement(table);
 
   check('pdf: heading row found', Boolean(table.columns), true);
-  check('pdf: bank identified', identifyBank(table.preamble).name, 'HDFC Bank');
+  check('pdf: bank identified', identifyBank(table.preamble, table.columns).name, 'HDFC Bank');
   check('pdf: transaction count', result.transactions.length, 2);
   check('pdf: amount landed in the debit column', result.transactions[0].paise, 62000);
   check('pdf: first is a debit', result.transactions[0].direction, 'debit');

@@ -108,6 +108,78 @@ export function readTransactions(table) {
 }
 
 /**
+ * Put same-day rows back into the order the balance says they happened.
+ *
+ * Banks do not always print same-day transactions in the order they occurred.
+ * A real ICICI statement listed two identical ₹20,000 withdrawals on one day in
+ * an order where the running balance falls by forty thousand and then rises by
+ * twenty — impossible as printed, correct once the two are swapped.
+ *
+ * Nothing is invented and nothing is dropped. Each row already carries the
+ * balance it resulted in, so the true order can be reconstructed: from the
+ * balance before the group, repeatedly take whichever remaining transaction
+ * lands exactly on its own stated balance. If no such order exists, the group
+ * is left exactly as the bank printed it and the check reports it, because a
+ * genuine misreading must not be tidied away.
+ */
+export function reorderSameDay(transactions) {
+  const ordered = [];
+  let index = 0;
+
+  while (index < transactions.length) {
+    let last = index;
+    while (
+      last + 1 < transactions.length &&
+      transactions[last + 1].date === transactions[index].date
+    ) last++;
+
+    const group = transactions.slice(index, last + 1);
+
+    if (group.length > 1 && ordered.length > 0) {
+      const before = ordered[ordered.length - 1].balancePaise;
+      const fixed = chainByBalance(before, group);
+      if (fixed) {
+        ordered.push(...fixed);
+        index = last + 1;
+        continue;
+      }
+    }
+
+    ordered.push(...group);
+    index = last + 1;
+  }
+
+  return ordered;
+}
+
+/** The order, if one exists, in which each row lands on its own balance. */
+function chainByBalance(startingBalance, group) {
+  if (startingBalance === null) return null;
+  if (group.some((item) => item.balancePaise === null || item.direction === null)) return null;
+
+  const remaining = [...group];
+  const ordered = [];
+  let balance = startingBalance;
+
+  while (remaining.length > 0) {
+    const next = remaining.findIndex((item) => {
+      const signed = item.direction === 'credit' ? item.paise : -item.paise;
+      return balance + signed === item.balancePaise;
+    });
+
+    if (next === -1) return null;
+
+    balance = remaining[next].balancePaise;
+    ordered.push(remaining[next]);
+    remaining.splice(next, 1);
+  }
+
+  // Only worth reporting as a reorder if it actually changed anything.
+  const moved = ordered.some((item, position) => item !== group[position]);
+  return moved ? ordered : null;
+}
+
+/**
  * Use the bank's own running balance to decide direction where the statement
  * did not say, and to check every row we read.
  */
@@ -206,8 +278,14 @@ export function summarise(transactions) {
 /** The whole job: a table in, a checked statement out. */
 export function readStatement(table) {
   const { transactions, skipped, reason } = readTransactions(table);
-  const verification = verifyAgainstBalance(transactions);
-  const summary = summarise(transactions);
 
-  return { transactions, skipped, verification, summary, reason };
+  /* Same-day rows are put back into the order the balance says they happened
+     before anything is checked, because a bank printing two transactions out of
+     sequence is not the same thing as us misreading them. */
+  const ordered = reorderSameDay(transactions);
+
+  const verification = verifyAgainstBalance(ordered);
+  const summary = summarise(ordered);
+
+  return { transactions: ordered, skipped, verification, summary, reason };
 }

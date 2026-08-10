@@ -138,7 +138,7 @@ async function readOne(job) {
 
       job.status = 'read';
       job.result = result;
-      job.bank = identifyBank(table.preamble);
+      job.bank = identifyBank(table.preamble, table.columns);
       job.ending = findAccountEnding(table.preamble);
       return;
     } catch (error) {
