@@ -18,10 +18,10 @@ export function monthKey(timestamp) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export function monthName(key) {
+export function monthName(key, language = 'en-IN') {
   const [year, month] = key.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, 1))
-    .toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    .toLocaleDateString(language, { month: 'long', year: 'numeric' });
 }
 
 /** Every month that has any activity, oldest first. */

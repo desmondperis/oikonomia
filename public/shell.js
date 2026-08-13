@@ -93,15 +93,14 @@ export function renderHousehold() {
 
   if (!session.configured) {
     body.append(node('p', 'import-note',
-      'Sign-in is not switched on yet, so Oikonomia is running on this device alone. ' +
-      'Everything works — it simply is not shared with anyone else yet.'));
+      t('house.deviceOnly')));
     return;
   }
 
   if (!session.signedIn) {
     body.append(node('p', 'import-lead',
-      'Sign in to share this household with your family, so everyone sees the same plan.'));
-    const link = node('a', 'primary-action landing-action', 'Continue with Google');
+      t('house.signInFirst')));
+    const link = node('a', 'primary-action landing-action', t('house.continueGoogle'));
     link.href = '/api/auth/google/start';
     body.append(link);
     return;
@@ -109,27 +108,27 @@ export function renderHousehold() {
 
   if (!session.household) {
     body.append(node('p', 'import-lead',
-      'Create a household, or join one that somebody has already made.'));
+      t('house.createOrJoin')));
 
     const nameField = node('label', 'field');
-    nameField.append(node('span', 'field-label', 'What shall we call your household?'));
+    nameField.append(node('span', 'field-label', t('house.nameAsk')));
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
-    nameInput.placeholder = 'The Peris family';
+    nameInput.placeholder = t('house.namePlaceholder');
     nameField.append(nameInput);
 
-    const create = node('button', 'primary-action', 'Create our household');
+    const create = node('button', 'primary-action', t('house.create'));
     create.type = 'button';
 
     const codeField = node('label', 'field');
-    codeField.append(node('span', 'field-label', 'Or join with a code'));
+    codeField.append(node('span', 'field-label', t('house.orJoin')));
     const codeInput = document.createElement('input');
     codeInput.type = 'text';
     codeInput.placeholder = 'PERIS19';
     codeInput.autocapitalize = 'characters';
     codeField.append(codeInput);
 
-    const join = node('button', 'secondary-action full', 'Join that household');
+    const join = node('button', 'secondary-action full', t('house.join'));
     join.type = 'button';
 
     const problem = node('p', 'import-note');
@@ -169,10 +168,9 @@ export function renderHousehold() {
   body.append(node('p', 'household-name', household.name));
 
   const code = node('div', 'household-code');
-  code.append(node('span', 'household-code-label', 'Your household code'));
+  code.append(node('span', 'household-code-label', t('house.code')));
   code.append(node('strong', null, household.code));
-  code.append(node('span', 'household-code-note',
-    'Share this with your family so they can join. It says nothing about your money.'));
+  code.append(node('span', 'household-code-note', t('house.codeNote')));
   body.append(code);
 
   const list = node('ul', 'file-list');
@@ -180,8 +178,8 @@ export function renderHousehold() {
     const item = node('li', 'file-row');
     item.append(node('span', 'file-name', member.name || member.email));
     item.append(node('span', 'file-state',
-      member.role === 'HEAD' ? 'head of household'
-        : member.role === 'VIEW_ONLY' ? 'can look only' : 'can add and change'));
+      member.role === 'HEAD' ? t('house.head')
+        : member.role === 'VIEW_ONLY' ? t('house.viewOnly') : t('house.member')));
     list.append(item);
   }
   body.append(list);

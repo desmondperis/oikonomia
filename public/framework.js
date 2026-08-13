@@ -82,6 +82,7 @@ export function isEssential(id) {
 export const PRINCIPLES = [
   {
     id: 'ownership',
+    key: 'pr.ownership',
     title: 'What we hold, we hold in trust',
     passages: [
       { ref: 'Psalm 24:1', text: 'The earth is Yahweh’s, with its fullness; the world, and those who dwell therein.' },
@@ -93,6 +94,7 @@ export const PRINCIPLES = [
   },
   {
     id: 'provision',
+    key: 'pr.provision',
     title: 'Providing for your household comes first',
     passages: [
       { ref: '1 Timothy 5:8' },
@@ -104,6 +106,7 @@ export const PRINCIPLES = [
   },
   {
     id: 'planning',
+    key: 'pr.planning',
     title: 'Counting the cost before you begin',
     passages: [
       { ref: 'Proverbs 21:5', text: 'The plans of the diligent surely lead to profit; and everyone who is hasty surely rushes to poverty.' },
@@ -115,6 +118,7 @@ export const PRINCIPLES = [
   },
   {
     id: 'debt',
+    key: 'pr.debt',
     title: 'Debt narrows what you can choose',
     passages: [
       { ref: 'Proverbs 22:7', text: 'The rich rule over the poor. The borrower is servant to the lender.' },
@@ -126,6 +130,7 @@ export const PRINCIPLES = [
   },
   {
     id: 'preparedness',
+    key: 'pr.preparedness',
     title: 'Setting something aside before it is needed',
     passages: [
       { ref: 'Proverbs 6:6-8', text: 'Go to the ant, you sluggard. Consider her ways, and be wise; which having no chief, overseer, or ruler, provides her bread in the summer, and gathers her food in the harvest.' },
@@ -138,6 +143,7 @@ export const PRINCIPLES = [
   },
   {
     id: 'contentment',
+    key: 'pr.contentment',
     title: 'Enough is a real place',
     passages: [
       { ref: 'Philippians 4:11', text: 'Not that I speak because of lack, for I have learned in whatever state I am, to be content in it.' },
@@ -150,6 +156,7 @@ export const PRINCIPLES = [
   },
   {
     id: 'generosity',
+    key: 'pr.generosity',
     title: 'Giving belongs in the plan',
     passages: [
       { ref: 'Proverbs 11:25', text: 'The liberal soul shall be made fat. He who waters shall be watered also himself.' },
@@ -162,6 +169,7 @@ export const PRINCIPLES = [
   },
   {
     id: 'work',
+    key: 'pr.work',
     title: 'Budgeting is not only about spending less',
     passages: [
       { ref: 'Proverbs 14:23', text: 'In all hard work there is profit; but the talk of the lips leads only to poverty.' },

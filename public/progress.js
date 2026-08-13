@@ -19,6 +19,7 @@
  * entire purpose of the exercise.
  */
 
+import { t, categoryName } from './i18n.js';
 import { monthKey } from './engine.js';
 
 const STORE = 'oikonomia.progress.v1';
@@ -183,8 +184,8 @@ export function noticeProgress(entries, budget, comparison, now = Date.now()) {
     if (day.earned > 0) {
       const streak = recordingStreak(entries, now);
       said.push(streak >= 3
-        ? { kind: 'streak', text: `${streak} days in a row`, points: day.earned }
-        : { kind: 'day', text: 'Written down for today', points: day.earned });
+        ? { kind: 'streak', text: t('progress.streakDays', { n: streak }), points: day.earned }
+        : { kind: 'day', text: t('progress.day'), points: day.earned });
     }
   }
 
@@ -208,7 +209,7 @@ export function noticeProgress(entries, budget, comparison, now = Date.now()) {
       if (earned.earned > 0) {
         said.push({
           kind: 'discovery',
-          text: `You now know what ${line.id.toLowerCase()} really costs you`,
+          text: t('progress.discovery', { category: categoryName(line.id).toLowerCase() }),
           points: earned.earned
         });
       }

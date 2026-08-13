@@ -20,114 +20,39 @@ import { t } from './i18n.js';
 
 const STORE = 'oikonomia.profile.v1';
 
-/* Each question is one a household can answer without counting anything. */
+/* Each question is one a household can answer without counting anything.
+   The wording lives in i18n.js so every one of them speaks both languages. */
 const QUESTIONS = [
+  { id: 'incomePaise', kind: 'money', key: 'q.income', placeholder: '30000', required: true },
   {
-    id: 'incomePaise',
-    kind: 'money',
-    ask: 'How much money comes into your household in a month?',
-    help: 'Everything together — salary, wages, business, rent received, help from family. If it varies, give a normal month.',
-    placeholder: '30000',
-    required: true
+    id: 'incomeSteady', kind: 'choice', key: 'q.steady',
+    options: [['steady', 'q.steady.same'], ['varies', 'q.steady.varies'], ['irregular', 'q.steady.irregular']]
+  },
+  { id: 'adults', kind: 'count', key: 'q.adults', placeholder: '2' },
+  { id: 'children', kind: 'count', key: 'q.children', placeholder: '0' },
+  { id: 'rentPaise', kind: 'money', key: 'q.rent' },
+  { id: 'loanPaise', kind: 'money', key: 'q.loan' },
+  { id: 'feesPaise', kind: 'yearly', key: 'q.fees' },
+  { id: 'insurancePaise', kind: 'yearly', key: 'q.insurance' },
+  {
+    id: 'travel', kind: 'choice', key: 'q.travel',
+    options: [['walk', 'q.travel.walk'], ['public', 'q.travel.public'],
+      ['twowheeler', 'q.travel.twowheeler'], ['car', 'q.travel.car']]
   },
   {
-    id: 'incomeSteady',
-    kind: 'choice',
-    ask: 'Does that arrive steadily?',
-    help: 'It changes what kind of cushion makes sense for you.',
-    options: [
-      ['steady', 'The same every month'],
-      ['varies', 'It varies'],
-      ['irregular', 'Some months there is little or none']
-    ]
+    id: 'givingShare', kind: 'choice', key: 'q.giving',
+    options: [['0.10', 'q.giving.tenth'], ['0.05', 'q.giving.twentieth'],
+      ['other', 'q.giving.other'], ['0', 'q.giving.none']]
   },
   {
-    id: 'adults',
-    kind: 'count',
-    ask: 'How many adults live in your household?',
-    help: 'Everyone whose living costs come out of this money.',
-    placeholder: '2'
+    id: 'shortfall', kind: 'choice', key: 'q.shortfall',
+    options: [['comfortable', 'q.shortfall.ok'], ['tight', 'q.shortfall.tight'],
+      ['short', 'q.shortfall.short'], ['borrow', 'q.shortfall.borrow']]
   },
   {
-    id: 'children',
-    kind: 'count',
-    ask: 'And how many children?',
-    help: 'Leave it blank if none.',
-    placeholder: '0'
-  },
-  {
-    id: 'rentPaise',
-    kind: 'money',
-    ask: 'What do you pay for your home each month?',
-    help: 'Rent, or a home loan payment. Skip if you own it outright with nothing to pay.'
-  },
-  {
-    id: 'loanPaise',
-    kind: 'money',
-    ask: 'Do you have any loan or EMI payments?',
-    help: 'Bank loan, gold loan, vehicle, buy-now-pay-later, or money being repaid to family. Add them together.'
-  },
-  {
-    id: 'feesPaise',
-    kind: 'yearly',
-    ask: 'School or college fees?',
-    help: 'Give the yearly amount and Oikonomia will set aside a twelfth each month, so the term bill does not arrive as a shock.'
-  },
-  {
-    id: 'insurancePaise',
-    kind: 'yearly',
-    ask: 'Insurance premiums?',
-    help: 'Life, health or vehicle, for the whole year. Skip if you have none — Oikonomia will mention it later.'
-  },
-  {
-    id: 'travel',
-    kind: 'choice',
-    ask: 'How does your household usually get about?',
-    help: 'This shapes what Oikonomia expects travel to cost.',
-    options: [
-      ['walk', 'Mostly walking or cycling'],
-      ['public', 'Bus, train or shared auto'],
-      ['twowheeler', 'A two-wheeler'],
-      ['car', 'A car']
-    ]
-  },
-  {
-    id: 'givingShare',
-    kind: 'choice',
-    ask: 'Do you set anything aside for giving?',
-    help: 'Church, charity, helping family or neighbours. This is entirely yours to decide — Oikonomia only makes room for whatever you choose.',
-    options: [
-      ['0.10', 'A tenth of what comes in'],
-      ['0.05', 'Around a twentieth'],
-      ['other', 'Something else — I will set it myself'],
-      ['0', 'Not at the moment']
-    ]
-  },
-  {
-    id: 'shortfall',
-    kind: 'choice',
-    ask: 'Be honest — how do most months end?',
-    help: 'Nobody sees this but you. It changes what Oikonomia suggests first.',
-    options: [
-      ['comfortable', 'There is usually something left'],
-      ['tight', 'It is tight but it works out'],
-      ['short', 'I often run out before the month does'],
-      ['borrow', 'I usually have to borrow']
-    ]
-  },
-  {
-    id: 'goal',
-    kind: 'choice',
-    ask: 'What would you most like money to do for you?',
-    help: 'Oikonomia will work towards this once the essentials are steady.',
-    options: [
-      ['cushion', 'Stop living so close to the edge'],
-      ['debt', 'Get out of debt'],
-      ['school', "Pay for children's education"],
-      ['home', 'A home of our own'],
-      ['family', 'Help family who need it'],
-      ['later', 'Something for later life']
-    ]
+    id: 'goal', kind: 'choice', key: 'q.goal',
+    options: [['cushion', 'q.goal.cushion'], ['debt', 'q.goal.debt'], ['school', 'q.goal.school'],
+      ['home', 'q.goal.home'], ['family', 'q.goal.family'], ['later', 'q.goal.later']]
   }
 ];
 
@@ -179,8 +104,8 @@ function render(body) {
   progress.append(bar);
 
   body.append(progress);
-  body.append(node('h3', 'survey-ask', question.ask));
-  body.append(node('p', 'survey-help', question.help));
+  body.append(node('h3', 'survey-ask', t(question.key)));
+  body.append(node('p', 'survey-help', t(question.key + '.help')));
 
   const problem = node('p', 'form-error');
   problem.hidden = true;
@@ -197,8 +122,8 @@ function render(body) {
 function renderChoice(body, question, problem) {
   const list = node('div', 'welcome-choices');
 
-  for (const [value, label] of question.options) {
-    const choice = node('button', 'welcome-choice', label);
+  for (const [value, labelKey] of question.options) {
+    const choice = node('button', 'welcome-choice', t(labelKey));
     choice.type = 'button';
     if (String(answers[question.id]) === value) choice.dataset.chosen = 'true';
 
@@ -227,9 +152,9 @@ function renderNumber(body, question, problem) {
 
   if (isMoney) {
     field.append(node('span', 'field-label',
-      question.kind === 'yearly' ? 'Amount for the whole year' : 'Amount each month'));
+      t(question.kind === 'yearly' ? 'survey.yearly' : 'survey.monthly')));
   } else {
-    field.append(node('span', 'field-label', 'How many'));
+    field.append(node('span', 'field-label', t('survey.howMany')));
   }
 
   const wrap = node('div', isMoney ? 'amount-input' : 'plain-input');
@@ -257,7 +182,7 @@ function renderNumber(body, question, problem) {
 
     if (!typed) {
       if (question.required) {
-        problem.textContent = 'Oikonomia cannot plan without this one. A rough figure is fine.';
+        problem.textContent = t('survey.needed');
         problem.hidden = false;
         input.focus();
         return;
@@ -266,7 +191,7 @@ function renderNumber(body, question, problem) {
     } else if (isMoney) {
       const paise = readRupees(typed);
       if (paise === null) {
-        problem.textContent = 'Please enter an amount, like 5000.';
+        problem.textContent = t('add.needAmount');
         problem.hidden = false;
         input.focus();
         return;
@@ -276,7 +201,7 @@ function renderNumber(body, question, problem) {
     } else {
       const count = Number(typed.replace(/\D/g, ''));
       if (!Number.isFinite(count)) {
-        problem.textContent = 'Please enter a number.';
+        problem.textContent = t('survey.notANumber');
         problem.hidden = false;
         return;
       }
@@ -287,7 +212,7 @@ function renderNumber(body, question, problem) {
     render(body);
   };
 
-  const next = node('button', 'primary-action', step === QUESTIONS.length - 1 ? 'Finish' : 'Next');
+  const next = node('button', 'primary-action', t(step === QUESTIONS.length - 1 ? 'survey.finish' : 'survey.next'));
   next.type = 'button';
   next.addEventListener('click', accept);
 
@@ -298,7 +223,7 @@ function renderNumber(body, question, problem) {
   body.append(next);
 
   if (!question.required) {
-    const skip = node('button', 'secondary-action full', 'I do not have this');
+    const skip = node('button', 'secondary-action full', t('survey.dontHave'));
     skip.type = 'button';
     skip.addEventListener('click', () => {
       delete answers[question.id];
@@ -314,7 +239,7 @@ function renderNumber(body, question, problem) {
 }
 
 function backButton(body) {
-  const back = node('button', 'link-action', 'Back');
+  const back = node('button', 'link-action', t('survey.back'));
   back.type = 'button';
   back.addEventListener('click', () => { if (step > 0) step--; render(body); });
   return back;
@@ -331,12 +256,8 @@ function renderSummary(body) {
     answeredAt: Date.now()
   };
 
-  body.append(node('h3', 'survey-ask', 'That is all Oikonomia needs'));
-  body.append(node('p', 'survey-help',
-    'It will not ask what you spend on food or travel, because most households have never ' +
-    'counted and a guess would only mislead you. Oikonomia will put a starting figure against ' +
-    'those, clearly marked as its own estimate. What you actually record this month is what ' +
-    'turns them into the truth — and seeing that is the point.'));
+  body.append(node('h3', 'survey-ask', t('survey.done')));
+  body.append(node('p', 'survey-help', t('survey.doneHelp')));
 
   const figures = node('dl', 'understood');
   const row = (label, value) => {
@@ -346,28 +267,27 @@ function renderSummary(body) {
     figures.append(item);
   };
 
-  row('Money coming in', formatPaise(profile.incomePaise || 0));
+  row(t('plan.income'), formatPaise(profile.incomePaise || 0));
 
   const known = (profile.rentPaise || 0) + (profile.loanPaise || 0) +
     (profile.feesPaise || 0) + (profile.insurancePaise || 0);
-  row('Fixed commitments', formatPaise(known));
-  row('Left to plan with', formatPaise(Math.max(0, (profile.incomePaise || 0) - known)));
+  row(t('survey.commitments'), formatPaise(known));
+  row(t('survey.leftToPlan'), formatPaise(Math.max(0, (profile.incomePaise || 0) - known)));
 
   body.append(figures);
 
-  const make = node('button', 'primary-action', 'Build my plan');
+  const make = node('button', 'primary-action', t('survey.build'));
   make.type = 'button';
   make.addEventListener('click', () => {
     saveProfile(profile);
     onFinish(profile);
   });
 
-  const again = node('button', 'secondary-action full', 'Change my answers');
+  const again = node('button', 'secondary-action full', t('survey.changeAnswers'));
   again.type = 'button';
   again.addEventListener('click', () => { step = 0; render(body); });
 
   body.append(make, again);
-  void t;
 }
 
 /* ---------- starting ---------- */

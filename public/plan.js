@@ -15,7 +15,7 @@ import { allocate, SOURCE_ESTIMATE, howMuchIsKnown } from './allocate.js';
 import { principlesFor, categoryInfo } from './framework.js';
 import { startSurvey, loadProfile } from './survey.js';
 import { readInstruction, readWithAssistant, amountAfter } from './intent.js';
-import { t, categoryName } from './i18n.js';
+import { t, categoryName, getLanguage } from './i18n.js';
 
 const STORE = 'oikonomia.budget.v1';
 
@@ -123,18 +123,28 @@ function guidance(entries) {
   if (!principle) return null;
 
   const box = node('div', 'principle');
-  box.append(node('strong', null, principle.title));
-  box.append(node('p', 'principle-says', principle.says));
+  box.append(node('strong', null, t(principle.key)));
+  box.append(node('p', 'principle-says', t(`${principle.key}.says`)));
 
   const passage = principle.passages.find((item) => item.text);
   if (passage) {
     const quote = node('blockquote', 'principle-passage');
-    quote.append(node('span', null, `“${passage.text}”`));
+
+    /* The passage is quoted only in the language it was translated into. Putting
+       Scripture into Hindi is a translator's work; an improvised rendering would
+       be worse than none, so the reference is given and the household reads it in
+       their own Bible. */
+    if (getLanguage().startsWith('hi')) {
+      quote.append(node('span', null, t('pr.readIt')));
+    } else {
+      quote.append(node('span', null, `“${passage.text}”`));
+    }
+
     quote.append(node('cite', null, passage.ref));
     box.append(quote);
   }
 
-  box.append(node('p', 'principle-source', 'A principle, not a rule about amounts. What you do with it is yours.'));
+  box.append(node('p', 'principle-source', t('plan.principleNote')));
   return box;
 }
 
@@ -157,9 +167,9 @@ function planLines(budget, entries) {
     // A household should always be able to see which figures are its own and
     // which are Oikonomia's guesses, without opening anything.
     if (line.source === SOURCE_ESTIMATE) {
-      left.append(node('span', 'plan-tag plan-guess', 'still a guess'));
+      left.append(node('span', 'plan-tag plan-guess', t('survey.stillGuess')));
     } else if (line.fixed) {
-      left.append(node('span', 'plan-tag', 'every month'));
+      left.append(node('span', 'plan-tag', t('plan.everyMonth')));
     }
 
     const right = node('div', 'plan-amounts');
@@ -189,7 +199,7 @@ function planLines(budget, entries) {
     input.className = 'plan-input';
     input.setAttribute('aria-label', `Planned amount for ${line.id}`);
 
-    const apply = node('button', 'secondary-action', 'Change');
+    const apply = node('button', 'secondary-action', t('plan.change'));
     apply.type = 'button';
 
     const consequence = node('p', 'plan-consequence');
@@ -198,7 +208,7 @@ function planLines(budget, entries) {
     apply.addEventListener('click', () => {
       const paise = readRupees(input.value);
       if (paise === null) {
-        consequence.textContent = 'Please enter an amount, like 5000.';
+        consequence.textContent = t('add.needAmount');
         consequence.hidden = false;
         return;
       }
@@ -340,7 +350,7 @@ function render() {
     if (word) ui.body.append(word);
 
     if (ready) {
-      const make = node('button', 'primary-action', 'Make my plan');
+      const make = node('button', 'primary-action', t('plan.makeMine'));
       make.type = 'button';
       make.addEventListener('click', () => {
         const fresh = buildBudget(entries);
@@ -371,16 +381,16 @@ function render() {
     return;
   }
 
-  ui.body.append(node('h3', 'import-title', `Your plan for ${monthName(budget.month)}`));
+  ui.body.append(node('h3', 'import-title',
+    t('plan.forMonth', { month: monthName(budget.month, getLanguage()) })));
 
   if (budget.fromProfile) {
     const known = howMuchIsKnown(budget);
 
     ui.body.append(node('p', 'understood-source',
       known.estimated > 0
-        ? `${known.known} of these come from what you told Oikonomia. ${known.estimated} are its ` +
-          'own estimates, marked below — record what you actually spend and they become the truth.'
-        : 'Every figure here now comes from what your household actually does.'));
+        ? t('plan.builtFrom', { known: known.known, estimated: known.estimated })
+        : t('plan.allReal')));
 
     if (known.estimated > 0) {
       const bar = node('div', 'known-meter');
@@ -390,7 +400,7 @@ function render() {
 
       ui.body.append(bar);
       ui.body.append(node('p', 'known-note',
-        `${Math.round(known.share * 100)}% of your plan is now real. The rest is still a guess.`));
+        t('survey.knownNote', { percent: Math.round(known.share * 100) })));
     }
   }
 
@@ -398,9 +408,9 @@ function render() {
 
   const totals = node('dl', 'understood');
   totals.append(
-    figureRow('Planned', formatPaise(budget.plannedPaise)),
-    figureRow('Spent so far', formatPaise(comparison.spentPaise)),
-    figureRow('Still to spend', formatPaise(comparison.remainingPaise))
+    figureRow(t('plan.planned'), formatPaise(budget.plannedPaise)),
+    figureRow(t('plan.spentSoFar'), formatPaise(comparison.spentPaise)),
+    figureRow(t('plan.stillToSpend'), formatPaise(comparison.remainingPaise))
   );
   ui.body.append(totals);
 
@@ -416,18 +426,18 @@ function render() {
 
   ui.body.append(askBox(budget, entries));
 
-  ui.body.append(node('p', 'import-note', 'Tap any line to see why it is set there, and to change it.'));
+  ui.body.append(node('p', 'import-note', t('plan.tapAny')));
   ui.body.append(list);
 
   const word = guidance(entries);
   if (word) ui.body.append(word);
 
-  const redo = node('button', 'secondary-action full', 'Start the plan again');
+  const redo = node('button', 'secondary-action full', t('plan.startAgain'));
   redo.type = 'button';
   redo.addEventListener('click', () => {
     if (redo.dataset.armed !== 'true') {
       redo.dataset.armed = 'true';
-      redo.textContent = 'Tap again to rebuild it from your records';
+      redo.textContent = t('plan.startOverSure');
       return;
     }
     clearBudget();

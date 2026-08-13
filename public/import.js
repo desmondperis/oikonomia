@@ -6,6 +6,7 @@
  * alone, and one unreadable file never stops the rest.
  */
 
+import { t } from './i18n.js';
 import { formatPaise } from './money.js';
 import { readDelimited } from './statements/csv.js';
 import { readFixedWidth } from './statements/fixed.js';
@@ -322,12 +323,9 @@ function showSummary() {
     note.className = 'verdict verdict-warn';
     const wrapper = document.createElement('div');
     const title = document.createElement('strong');
-    title.textContent = 'One of these was a scan';
+    title.textContent = t('st.wasScan');
     const body = document.createElement('span');
-    body.textContent =
-      'Reading a picture of a statement is less certain than reading text, so please ' +
-      'look these figures over more carefully than usual. The balance check below is ' +
-      'the best guide to whether it went well.';
+    body.textContent = t('st.wasScanNote');
     wrapper.append(title, body);
     note.append(wrapper);
     ui.result.append(note);
@@ -403,7 +401,7 @@ function overallVerdict(read) {
   if (wrong.length === 0 && unchecked.length === 0) {
     box.className = 'verdict verdict-good';
     const checks = read.reduce((sum, job) => sum + job.result.verification.checked, 0);
-    title.textContent = 'These figures add up';
+    title.textContent = t('st.addsUp');
     body.textContent =
       `Every transaction matches the running balance your bank printed, across ${checks} checks. ` +
       'Please still look them over.';
@@ -411,13 +409,13 @@ function overallVerdict(read) {
     box.className = 'verdict verdict-warn';
     if (wrong.length > 0) {
       const rows = wrong.reduce((sum, job) => sum + job.result.verification.mismatches.length, 0);
-      title.textContent = 'Some rows did not add up';
+      title.textContent = t('st.didNotAddUp');
       body.textContent =
         `${rows} transaction${rows === 1 ? '' : 's'} disagree with the running balance your bank ` +
         'printed, which means I have misread something. You can still add them, but please check ' +
         'them first:';
     } else {
-      title.textContent = 'I could not check these';
+      title.textContent = t('st.couldNotCheck');
       body.textContent =
         `${unchecked.length} statement${unchecked.length === 1 ? ' has' : 's have'} no running ` +
         'balance column, so there is nothing to check my reading against. Please look through the ' +

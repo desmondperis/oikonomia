@@ -219,6 +219,52 @@ const sharing = runSuite('test-sync.mjs', "A household's phones stay in step wit
 const instructions = runSuite('test-intent.mjs', 'A plan change said in words means what it says');
 const planning = runSuite('test-allocate.mjs', 'A plan can be built without asking what somebody spends');
 
+/* Every phrase must exist in both languages, or a household reading Hindi meets
+   a sentence of English in the middle of their own app. */
+{
+  const words = readFileSync(join(root, 'public', 'i18n.js'), 'utf8');
+  const section = words.slice(words.indexOf('const WORDS'), words.indexOf('/* ---------- which language'));
+
+  const entries = [...section.matchAll(/^\s*'([\w.]+)':\s*\[([\s\S]*?)\],?\s*$/gm)];
+  const untranslated = [];
+
+  for (const [, key, body] of entries) {
+    // Two quoted strings means both languages are present.
+    const forms = body.match(/(['"])(?:\\.|(?!\1)[^\\])*\1/g) || [];
+    if (forms.length < 2) untranslated.push(key);
+  }
+
+  if (entries.length < 100) {
+    fail(
+      'Every phrase is written in both languages',
+      `Only ${entries.length} phrases were found in public/i18n.js. Either the phrase book ` +
+      'shrank unexpectedly or this check can no longer read it.'
+    );
+  }
+
+  if (untranslated.length > 0) {
+    fail(
+      'Every phrase is written in both languages',
+      `${untranslated.length} phrase(s) have no Hindi: ${untranslated.slice(0, 8).join(', ')}. ` +
+      'A household reading Hindi should never meet English in the middle of their own app.'
+    );
+  }
+}
+
+/* Scripture is not to be translated here. The passages carry English text and a
+   reference; rendering shows the reference alone in Hindi, because an
+   improvised rendering of Scripture would be worse than none. */
+{
+  const planJs = readFileSync(join(root, 'public', 'plan.js'), 'utf8');
+  if (!/getLanguage\(\)\.startsWith\('hi'\)/.test(planJs) || !/pr\.readIt/.test(planJs)) {
+    fail(
+      'Scripture is never improvised into another language',
+      'public/plan.js no longer withholds the quoted passage in Hindi. Translating Scripture ' +
+      "is a translator's work; the reference alone is the honest thing to show."
+    );
+  }
+}
+
 // The survey must never ask a household to price something they have never
 // counted. Asking assumes the answer this tool exists to uncover.
 const surveyJs = readFileSync(join(root, 'public', 'survey.js'), 'utf8');

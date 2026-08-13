@@ -265,13 +265,7 @@ function renderCategories(comparison) {
 }
 
 /* How the month reads, in three words rather than a lecture. */
-const PACE_WORDS = {
-  early:    ['Just started', 'this month'],
-  careful:  ['Careful', 'well within plan'],
-  onTrack:  ['On track', 'about right for the day'],
-  quick:    ['Going quickly', 'ahead of the plan'],
-  over:     ['Well ahead', 'of what was planned']
-};
+const PACE_STANDINGS = ['early', 'careful', 'onTrack', 'quick', 'over'];
 
 /**
  * The streak, the points, and how the month is going.
@@ -292,19 +286,21 @@ function renderProgress(entries, budget) {
   ui.dashProgress.hidden = false;
 
   ui.streakFigure.textContent = String(progress.streak);
-  ui.streakLabel.textContent = progress.streak === 1 ? 'day streak' : 'day streak';
+  ui.streakLabel.textContent = t('progress.streak');
   ui.streakFigure.parentElement.classList.toggle('streak-alight', progress.streak >= 3);
 
   ui.pointsFigure.textContent = String(progress.points);
 
   if (progress.pace) {
-    const [word, note] = PACE_WORDS[progress.pace.standing] || PACE_WORDS.onTrack;
-    ui.paceFigure.textContent = word;
-    ui.paceLabel.textContent = note;
-    ui.paceFigure.parentElement.dataset.standing = progress.pace.standing;
+    const standing = PACE_STANDINGS.includes(progress.pace.standing)
+      ? progress.pace.standing : 'onTrack';
+
+    ui.paceFigure.textContent = t(`pace.${standing}`);
+    ui.paceLabel.textContent = t(`pace.${standing}.note`);
+    ui.paceFigure.parentElement.dataset.standing = standing;
   } else {
     ui.paceFigure.textContent = String(progress.recorded);
-    ui.paceLabel.textContent = 'recorded this month';
+    ui.paceLabel.textContent = t('progress.recorded');
     delete ui.paceFigure.parentElement.dataset.standing;
   }
 }
@@ -331,8 +327,8 @@ function renderInsight(entries) {
   if (!principle) return;
 
   const card = makeNode('div', 'insight');
-  card.append(makeNode('strong', null, principle.title));
-  card.append(makeNode('p', null, principle.says));
+  card.append(makeNode('strong', null, t(principle.key)));
+  card.append(makeNode('p', null, t(`${principle.key}.says`)));
   ui.dashInsight.append(card);
 }
 
@@ -526,7 +522,7 @@ function removeEntry(id) {
 
   if (!saveEntries(entries)) {
     entries = before;
-    showToast('Could not save on this device');
+    showToast(t('toast.cannotSave'));
     return;
   }
 
@@ -842,7 +838,7 @@ function importTransactions(transactions) {
   const repeated = incoming.length - fresh.length;
 
   if (fresh.length === 0) {
-    showToast('Those transactions are already recorded');
+    showToast(t('toast.already'));
     return;
   }
 
@@ -851,15 +847,15 @@ function importTransactions(transactions) {
 
   if (!saveEntries(entries)) {
     entries = before;
-    showToast('Could not save on this device');
+    showToast(t('toast.cannotSave'));
     return;
   }
 
   render();
   showToast(
     repeated > 0
-      ? `${fresh.length} added, ${repeated} already recorded`
-      : `${fresh.length} transactions added`
+      ? t('toast.addedSome', { n: fresh.length, repeated })
+      : t('toast.added', { n: fresh.length })
   );
 
   categoriseEntries({ quiet: true });
