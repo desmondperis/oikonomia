@@ -25,98 +25,70 @@
 </section>
 
 <header class="app-bar">
-  <img src="icon-192.png" alt="" width="28" height="28" class="app-mark">
-  <span class="app-name">Oikonomia</span>
-  <span id="household-badge" class="household-badge" hidden></span>
-  <button type="button" id="settings-open" class="icon-button"
-          data-i18n-aria="settings.title" aria-label="Settings">
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="3.2"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
-    </svg>
-  </button>
+  <div class="brand">
+    <img src="icon-192.png" alt="" width="26" height="26" class="app-mark">
+    <span class="app-name">Oikonomia</span>
+  </div>
+
+  <div class="bar-actions">
+    <span id="household-badge" class="household-badge" hidden></span>
+    <button type="button" id="settings-open" class="icon-button"
+            aria-haspopup="menu" aria-expanded="false"
+            data-i18n-aria="settings.title" aria-label="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3.1"/>
+        <path d="M19.1 14.6a1.5 1.5 0 0 0 .3 1.66l.05.05a1.82 1.82 0 1 1-2.58 2.58l-.05-.05a1.5 1.5 0 0 0-1.66-.3 1.5 1.5 0 0 0-.91 1.38v.13a1.82 1.82 0 1 1-3.64 0v-.07a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.66.3l-.05.05a1.82 1.82 0 1 1-2.58-2.58l.05-.05a1.5 1.5 0 0 0 .3-1.66 1.5 1.5 0 0 0-1.37-.91H4.1a1.82 1.82 0 1 1 0-3.64h.07a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.66l-.05-.05A1.82 1.82 0 1 1 7.77 4.9l.05.05a1.5 1.5 0 0 0 1.66.3h.07a1.5 1.5 0 0 0 .91-1.37V3.8a1.82 1.82 0 1 1 3.64 0v.07a1.5 1.5 0 0 0 .91 1.37 1.5 1.5 0 0 0 1.66-.3l.05-.05a1.82 1.82 0 1 1 2.58 2.58l-.05.05a1.5 1.5 0 0 0-.3 1.66v.07a1.5 1.5 0 0 0 1.37.91h.13a1.82 1.82 0 1 1 0 3.64h-.07a1.5 1.5 0 0 0-1.37.91Z"/>
+      </svg>
+    </button>
+  </div>
 </header>
 
-<section id="settings" class="settings-sheet" hidden aria-labelledby="settings-title">
-  <header class="settings-head">
-    <button type="button" id="settings-close" class="back-action"
-            data-i18n-aria="settings.close" aria-label="Close">←</button>
-    <h2 id="settings-title" class="import-title" data-i18n="settings.title">Settings</h2>
-  </header>
+<div id="settings-backdrop" class="menu-backdrop" hidden></div>
 
-  <div class="settings-body">
-    <h3 class="section-heading" data-i18n="settings.appearance">Appearance</h3>
+<section id="settings" class="menu" hidden role="menu" aria-labelledby="settings-title">
+  <h2 id="settings-title" class="visually-hidden" data-i18n="settings.title">Settings</h2>
+  <button type="button" id="settings-close" class="visually-hidden"
+          data-i18n-aria="settings.close" aria-label="Close">×</button>
 
-    <div class="row row-static">
-      <span class="row-main">
-        <span class="row-title" data-i18n="settings.theme">Theme</span>
-        <span class="row-note" data-i18n="settings.themeNote">Follows your phone unless you choose</span>
-      </span>
-      <select id="theme-choice" class="row-control">
-        <option value="system" data-i18n="settings.themeSystem">Your phone's setting</option>
-        <option value="light" data-i18n="settings.themeLight">Light</option>
-        <option value="dark" data-i18n="settings.themeDark">Dark</option>
-      </select>
+  <div class="menu-body">
+    <p class="menu-heading" data-i18n="settings.appearance">Appearance</p>
+    <div class="segmented" id="theme-choice" role="group" data-value="system">
+      <button type="button" data-value="system" data-i18n="settings.themeSystem">Auto</button>
+      <button type="button" data-value="light" data-i18n="settings.themeLight">Light</button>
+      <button type="button" data-value="dark" data-i18n="settings.themeDark">Dark</button>
     </div>
 
-    <div class="row row-static">
-      <span class="row-main">
-        <span class="row-title" data-i18n="more.language">Language</span>
-        <span class="row-note" data-i18n="more.languageNote">Changes the whole app</span>
-      </span>
-      <select id="settings-language" class="row-control">
-        <option value="en-IN">English</option>
-        <option value="hi-IN">हिन्दी</option>
-      </select>
+    <p class="menu-heading" data-i18n="more.language">Language</p>
+    <div class="segmented" id="settings-language" role="group" data-value="en-IN">
+      <button type="button" data-value="en-IN">English</button>
+      <button type="button" data-value="hi-IN">हिन्दी</button>
     </div>
 
-    <div class="row row-static" id="private-voice-row" hidden>
-      <span class="row-main">
-        <span class="row-title" data-i18n="voice.private">Private voice</span>
-        <span class="row-note" id="private-voice-note" data-i18n="voice.privateNote">Keeps recordings on your phone · one-time download</span>
-      </span>
-      <select id="private-voice" class="row-control">
-        <option value="no" data-i18n="voice.phone">Phone's own</option>
-        <option value="yes" data-i18n="voice.onDevice">On this phone</option>
-      </select>
+    <div id="private-voice-row" hidden>
+      <p class="menu-heading" data-i18n="voice.private">Voice recognition</p>
+      <div class="segmented" id="private-voice" role="group" data-value="no">
+        <button type="button" data-value="no" data-i18n="voice.phone">Instant</button>
+        <button type="button" data-value="yes" data-i18n="voice.onDevice">Private</button>
+      </div>
+      <p class="menu-note" id="private-voice-note" data-i18n="voice.privateNote"></p>
     </div>
 
-    <h3 class="section-heading" data-i18n="settings.about">About Oikonomia</h3>
+    <hr class="menu-rule">
 
-    <a class="row row-link" href="/about" target="_blank" rel="noopener">
-      <span class="row-main"><span class="row-title" data-i18n="more.about">About</span></span>
-      <span class="row-chevron" aria-hidden="true">›</span>
-    </a>
-    <a class="row row-link" href="/privacy" target="_blank" rel="noopener">
-      <span class="row-main"><span class="row-title" data-i18n="more.privacy">Privacy</span></span>
-      <span class="row-chevron" aria-hidden="true">›</span>
-    </a>
-    <a class="row row-link" href="/terms" target="_blank" rel="noopener">
-      <span class="row-main"><span class="row-title" data-i18n="more.terms">Terms</span></span>
-      <span class="row-chevron" aria-hidden="true">›</span>
-    </a>
-    <a class="row row-link" href="/contact" target="_blank" rel="noopener">
-      <span class="row-main"><span class="row-title" data-i18n="more.contact">Contact</span></span>
-      <span class="row-chevron" aria-hidden="true">›</span>
-    </a>
-    <a class="row row-link" id="feedback-link"
-       href="mailto:desmondperis@gmail.com?subject=Oikonomia%20feedback">
-      <span class="row-main">
-        <span class="row-title" data-i18n="settings.feedback">Send feedback</span>
-        <span class="row-note" data-i18n="settings.feedbackNote">Tell me what is wrong or missing</span>
-      </span>
-      <span class="row-chevron" aria-hidden="true">›</span>
-    </a>
+    <a class="menu-item" href="/about" target="_blank" rel="noopener" data-i18n="more.about">About</a>
+    <a class="menu-item" href="/privacy" target="_blank" rel="noopener" data-i18n="more.privacy">Privacy</a>
+    <a class="menu-item" href="/terms" target="_blank" rel="noopener" data-i18n="more.terms">Terms</a>
+    <a class="menu-item" href="/contact" target="_blank" rel="noopener" data-i18n="more.contact">Contact</a>
+    <a class="menu-item" id="feedback-link"
+       href="mailto:desmondperis@gmail.com?subject=Oikonomia%20feedback"
+       data-i18n="settings.feedback">Send feedback</a>
 
-    <h3 class="section-heading" data-i18n="settings.account">Account</h3>
+    <hr class="menu-rule">
 
-    <button type="button" id="sign-out" class="row row-action" hidden>
-      <span class="row-main"><span class="row-title" data-i18n="more.signOut">Sign out</span></span>
-    </button>
+    <button type="button" id="sign-out" class="menu-item menu-item-quiet" hidden
+            data-i18n="more.signOut">Sign out</button>
 
-    <p id="signed-in-as" class="row-help"></p>
-
-    <p class="app-version">Oikonomia · household stewardship</p>
+    <p id="signed-in-as" class="menu-note"></p>
   </div>
 </section>
 

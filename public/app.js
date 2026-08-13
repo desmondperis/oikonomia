@@ -89,6 +89,7 @@ const ui = {
   settingsSheet: el('settings'),
   settingsOpen: el('settings-open'),
   settingsClose: el('settings-close'),
+  settingsBackdrop: el('settings-backdrop'),
   themeChoice: el('theme-choice'),
   privateVoiceRow: el('private-voice-row'),
   privateVoice: el('private-voice'),
@@ -110,7 +111,7 @@ const ui = {
  */
 function rememberLanguage(value) {
   language = setLanguage(value);
-  ui.settingsLanguage.value = language;
+  setSegmented(ui.settingsLanguage, language);
   ui.language.value = language;
   // The words in the settings sheet change too — it is not part of the tabs.
   applyTo(ui.settingsSheet);
@@ -1019,15 +1020,45 @@ function rememberTheme(choice) {
   applyTheme(choice);
 }
 
-/* ---------- the settings sheet ---------- */
+/* ---------- segmented choices ---------- */
 
-function openSettingsSheet() {
-  ui.settingsLanguage.value = language;
-  ui.themeChoice.value = loadTheme();
+/**
+ * Two or three options shown side by side rather than hidden in a dropdown.
+ *
+ * One tap instead of three, and a household can see what the alternatives are
+ * without opening anything — which matters most for the people who are least
+ * sure what a setting does.
+ */
+function setUpSegmented(group, onPick) {
+  for (const button of group.querySelectorAll('button')) {
+    button.addEventListener('click', () => {
+      if (group.dataset.value === button.dataset.value) return;
+      setSegmented(group, button.dataset.value);
+      onPick(button.dataset.value);
+    });
+  }
+}
+
+function setSegmented(group, value) {
+  group.dataset.value = value;
+  for (const button of group.querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', String(button.dataset.value === value));
+  }
+}
+
+/* ---------- the settings menu ----------
+   A menu belongs beside the button that opened it. Sending somebody to a whole
+   separate page to change one setting loses their place. */
+
+function openSettingsMenu() {
+  setSegmented(ui.settingsLanguage, language);
+  setSegmented(ui.themeChoice, loadTheme());
 
   // Only offered where the phone can actually do it.
   ui.privateVoiceRow.hidden = !privateCanListen();
-  ui.privateVoice.value = privateVoiceWanted() ? 'yes' : 'no';
+  if (!ui.privateVoiceRow.hidden) {
+    setSegmented(ui.privateVoice, privateVoiceWanted() ? 'yes' : 'no');
+  }
 
   const session = getSession();
   ui.signedInAs.textContent = session.signedIn && session.user
@@ -1035,12 +1066,14 @@ function openSettingsSheet() {
     : t('settings.notSignedIn');
 
   ui.settingsSheet.hidden = false;
-  ui.settingsClose.focus();
+  ui.settingsBackdrop.hidden = false;
+  ui.settingsOpen.setAttribute('aria-expanded', 'true');
 }
 
-function closeSettingsSheet() {
+function closeSettingsMenu() {
   ui.settingsSheet.hidden = true;
-  ui.settingsOpen.focus();
+  ui.settingsBackdrop.hidden = true;
+  ui.settingsOpen.setAttribute('aria-expanded', 'false');
 }
 
 function showKeyStatus(message = null, kind = null) {
@@ -1137,23 +1170,27 @@ ui.apiRemove.addEventListener('click', () => {
   showKeyStatus('Key removed.', null);
 });
 
-ui.settingsLanguage.addEventListener('change', () => {
-  rememberLanguage(ui.settingsLanguage.value);
-});
-
 ui.openRecords.addEventListener('click', () => showTab('records'));
 
-ui.settingsOpen.addEventListener('click', openSettingsSheet);
-ui.settingsClose.addEventListener('click', closeSettingsSheet);
+setUpSegmented(ui.settingsLanguage, rememberLanguage);
+setUpSegmented(ui.themeChoice, rememberTheme);
+setUpSegmented(ui.privateVoice, (value) => setPrivateVoice(value === 'yes'));
 
-ui.themeChoice.addEventListener('change', () => rememberTheme(ui.themeChoice.value));
-
-ui.privateVoice.addEventListener('change', () => {
-  setPrivateVoice(ui.privateVoice.value === 'yes');
+ui.settingsOpen.addEventListener('click', () => {
+  if (ui.settingsSheet.hidden) openSettingsMenu();
+  else closeSettingsMenu();
 });
 
+// Anywhere outside it closes it, as a menu should.
+ui.settingsBackdrop.addEventListener('click', closeSettingsMenu);
+ui.settingsClose.addEventListener('click', closeSettingsMenu);
+
+for (const link of ui.settingsSheet.querySelectorAll('a')) {
+  link.addEventListener('click', closeSettingsMenu);
+}
+
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !ui.settingsSheet.hidden) closeSettingsSheet();
+  if (event.key === 'Escape' && !ui.settingsSheet.hidden) closeSettingsMenu();
 });
 
 document.addEventListener('keydown', (event) => {
