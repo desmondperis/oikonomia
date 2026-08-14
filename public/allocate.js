@@ -213,16 +213,10 @@ function finish(lines, notes, income, answers) {
 
   const planned = lines.reduce((sum, item) => sum + item.plannedPaise, 0);
 
-  const estimated = lines.filter((item) => item.source === SOURCE_ESTIMATE).length;
-  if (estimated > 0) {
-    notes.push({
-      kind: 'estimates',
-      count: estimated,
-      text: `${estimated} of these are Oikonomia's estimates, not your figures. They are a ` +
-        'starting point. As you record what you actually spend, each one is replaced by what ' +
-        'is true — and that is the whole point of the first month.'
-    });
-  }
+  /* No note about the estimates. The plan screen already says how many there
+     are, marks each one in the list, and shows a meter of how much of the plan
+     is real yet. Saying it a fourth time in a warning box taught the reader
+     nothing and made the screen look like something had gone wrong. */
 
   return {
     incomePaise: income,

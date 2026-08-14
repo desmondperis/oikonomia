@@ -109,18 +109,16 @@
         <div class="meter-fill" id="headline-meter-fill"></div>
         <div class="meter-today" id="headline-meter-today"></div>
       </div>
+      <!-- how the month is going: the answer belongs with the money, not in a
+           box of its own beside two unrelated numbers -->
+      <p class="headline-pace" id="headline-pace" hidden>
+        <span id="pace-figure"></span><span id="pace-label"></span>
+      </p>
     </section>
 
-    <!-- adding, with the month's spending beside it -->
-    <div class="add-row">
-      <button id="add-button" class="primary-action add-main" type="button">
-        <span aria-hidden="true">+</span> <span data-i18n="tab.add">Add expense</span>
-      </button>
-      <div class="add-total">
-        <span class="add-total-label" data-i18n="home.spentShort">Spent</span>
-        <span class="add-total-figure" id="month-spent">₹0</span>
-      </div>
-    </div>
+    <button id="add-button" class="primary-action add-main" type="button">
+      <span aria-hidden="true">+</span> <span data-i18n="tab.add">Add expense</span>
+    </button>
 
     <!-- keeping at it -->
     <section id="dash-progress" class="streak-row" hidden>
@@ -131,10 +129,6 @@
       <div class="streak">
         <span class="streak-figure" id="points-figure">0</span>
         <span class="streak-label" data-i18n="progress.points">points</span>
-      </div>
-      <div class="streak streak-wide">
-        <span class="streak-figure" id="pace-figure">—</span>
-        <span class="streak-label" id="pace-label">this month</span>
       </div>
     </section>
 

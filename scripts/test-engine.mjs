@@ -169,7 +169,10 @@ const household = [
 {
   const budget = buildBudget(household, { now: NOW });
 
-  check('the plan is for next month', budget.month, '2026-05');
+  /* The month you are living in, not the next one. `compare` has always
+     measured against the current month, so any other label is a plan claiming
+     to govern a month it does not govern. */
+  check('the plan is for the month it will be measured against', budget.month, '2026-04');
   check('income carried into the plan', budget.incomePaise, rupees(72000));
   check('the plan does not exceed income', budget.plannedPaise <= budget.incomePaise, true);
 

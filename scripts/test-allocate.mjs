@@ -61,8 +61,17 @@ const household = {
   // Nothing is invented about what they told us.
   check('nothing was added they did not mention', find(budget, 'Subscriptions') !== undefined, true);
 
-  const note = budget.notes.find((item) => item.kind === 'estimates');
-  check('the household is told how much is guesswork', Boolean(note), true);
+  /* The household still has to be told how much of this is guesswork — that
+     honesty is the point of the whole design. It is told once, by the count and
+     the meter the plan screen draws from `howMuchIsKnown`, rather than a fourth
+     time in a warning box that made the screen look like a failure. */
+  const known = howMuchIsKnown(budget);
+  check('how much is guesswork is countable', known.estimated > 0, true);
+  check('and how much is real', known.known > 0, true);
+  check('and the two account for the whole plan',
+    known.known + known.estimated, budget.lines.length);
+  check('no estimate is dressed up as a warning',
+    budget.notes.some((item) => item.kind === 'estimates'), false);
 }
 
 {

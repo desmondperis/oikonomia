@@ -87,6 +87,9 @@ const WORDS = {
   'plan.title':          ['Your plan', 'आपकी योजना'],
   'plan.understood':     ["Here's what I understood", 'मैंने यह समझा है'],
   'plan.forMonth':       ['Your plan for {month}', '{month} की आपकी योजना'],
+  'plan.doesNotBalance': ['This plan does not balance', 'यह योजना बराबर नहीं बैठती'],
+  'plan.shortfallNote':  ['What you have already committed to comes to more than your income. That is worth looking at together, and it is a gap in income rather than a lapse in discipline.',
+                          'जो ख़र्च पहले से तय हैं, वे आपकी आमदनी से ज़्यादा हैं। इसे साथ बैठकर देखना ज़रूरी है — यह आमदनी की कमी है, अनुशासन की नहीं।'],
   'plan.income':         ['Money coming in', 'आने वाला पैसा'],
   'plan.essential':      ['Things you must pay', 'जो चुकाना ज़रूरी है'],
   'plan.flexible':       ['Everything else', 'बाकी सब'],
@@ -200,10 +203,12 @@ const WORDS = {
 
   /* ---------- hearing an expense ---------- */
   'voice.private':       ['Voice recognition', 'आवाज़ पहचान'],
-  'voice.privateNote':   ["Your phone's own is instant. On-device keeps recordings private but downloads about 40 MB once, and is slower.",
-                          'फ़ोन का अपना तुरंत काम करता है। इस फ़ोन पर वाला रिकॉर्डिंग निजी रखता है, पर एक बार लगभग 40 MB उतरता है और धीमा है।'],
-  'voice.phone':         ["Phone's own (instant)", 'फ़ोन का अपना (तुरंत)'],
-  'voice.onDevice':      ['On this phone (private)', 'इसी फ़ोन पर (निजी)'],
+  /* Short enough to sit on one line inside its button. The long form wrapped to
+     three lines each and turned a menu into a page. */
+  'voice.privateNote':   ['Private is slower and downloads 40 MB once.',
+                          'निजी वाला धीमा है और एक बार 40 MB उतारता है।'],
+  'voice.phone':         ['Instant', 'तुरंत'],
+  'voice.onDevice':      ['Private', 'निजी'],
   'voice.downloading':   ['Getting ready… {percent}%', 'तैयार हो रहा है… {percent}%'],
   'voice.thinking':      ['Working out what you said…', 'आपने क्या कहा, समझ रहा हूँ…'],
 
@@ -232,8 +237,11 @@ const WORDS = {
   'plan.startOverSure':  ['Tap again to rebuild it from your records', 'रिकॉर्ड से दोबारा बनाने के लिए फिर दबाएँ'],
   'plan.principleNote':  ['A principle, not a rule about amounts. What you do with it is yours.',
                           'यह एक सिद्धांत है, रकम का नियम नहीं। इसका क्या करना है, यह आपका फ़ैसला है।'],
-  'plan.builtFrom':      ['{known} of these come from what you told Oikonomia. {estimated} are its own estimates, marked below — record what you actually spend and they become the truth.',
-                          'इनमें से {known} आपके बताए हुए हैं। {estimated} ओइकोनोमिया के अपने अंदाज़े हैं, नीचे चिह्नित — आप जो सचमुच ख़र्च करते हैं वह दर्ज करें और ये सच बन जाएँगे।'],
+  /* Says only what the meter underneath it cannot: which lines are which. The
+     old version also promised that recording turns estimates into truth — the
+     same sentence the meter's own note makes, two lines further down. */
+  'plan.builtFrom':      ['{known} of these are your own figures. {estimated} are Oikonomia’s estimates, marked below.',
+                          'इनमें से {known} आपके अपने आँकड़े हैं। {estimated} ओइकोनोमिया के अंदाज़े हैं, नीचे चिह्नित।'],
   'plan.allReal':        ['Every figure here now comes from what your household actually does.',
                           'यहाँ हर आँकड़ा अब आपके घर की असल आदत से आता है।'],
 
@@ -259,7 +267,7 @@ const WORDS = {
   'settings.appearance': ['Appearance', 'दिखावट'],
   'settings.theme':      ['Theme', 'रंग-रूप'],
   'settings.themeNote':  ['Follows your phone unless you choose', 'आपके फ़ोन के अनुसार, जब तक आप न चुनें'],
-  'settings.themeSystem':["Your phone's setting", 'फ़ोन की सेटिंग'],
+  'settings.themeSystem':['Auto', 'अपने आप'],
   'settings.themeLight': ['Light', 'हल्का'],
   'settings.themeDark':  ['Dark', 'गहरा'],
   'settings.about':      ['About Oikonomia', 'ओइकोनोमिया के बारे में'],
@@ -353,13 +361,15 @@ const WORDS = {
   'survey.build':        ['Build my plan', 'मेरी योजना बनाएँ'],
   'survey.changeAnswers':['Change my answers', 'मेरे जवाब बदलें'],
   'survey.stillGuess':   ['still a guess', 'अभी अंदाज़ा'],
-  'survey.knownNote':    ['{percent}% of your plan is now real. The rest is still a guess.',
-                          'आपकी योजना का {percent}% अब सच है। बाकी अभी अंदाज़ा है।'],
+  'survey.knownNote':    ['{percent}% of your plan is real so far. Recording what you spend turns the rest real.',
+                          'अभी आपकी योजना का {percent}% सच है। जो ख़र्च करते हैं वह दर्ज करने से बाकी भी सच हो जाएगा।'],
 
   /* ---------- how the month is going ---------- */
   'pace.early':          ['Just started', 'अभी शुरू'],
   'pace.early.note':     ['this month', 'इस महीने'],
-  'pace.careful':        ['Careful', 'संभला हुआ'],
+  /* Not 'Careful' — on its own that word is an imperative, and it read as a
+     warning sitting directly above 'well within plan'. */
+  'pace.careful':        ['Comfortable', 'आराम से'],
   'pace.careful.note':   ['well within plan', 'योजना से काफ़ी कम'],
   'pace.onTrack':        ['On track', 'ठीक चल रहा'],
   'pace.onTrack.note':   ['about right for the day', 'तारीख़ के हिसाब से ठीक'],

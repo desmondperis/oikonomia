@@ -32,10 +32,16 @@ let onChanged = () => {};
 let asking = false;
 
 /** The month a fresh plan is for. */
-function nextMonth() {
+/* The month the plan governs is the month you are living in.
+ *
+ * This used to say next month, left over from when a plan was built by reading
+ * last month's statement. Under the survey it was simply wrong: `compare` has
+ * always measured spending against the current month, so a plan finished in
+ * August was labelled September while quietly governing August. It also meant
+ * finishing the survey on the 1st bought you thirty days of nothing to do. */
+function thisMonthKey() {
   const now = new Date();
-  const then = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return `${then.getFullYear()}-${String(then.getMonth() + 1).padStart(2, '0')}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
 /* ---------- keeping the plan ---------- */
@@ -334,7 +340,7 @@ function render() {
     startSurvey(ui.body, (profile) => {
       asking = false;
       const fresh = allocate(profile);
-      fresh.month = nextMonth();
+      fresh.month = thisMonthKey();
       saveBudget(fresh);
       onChanged();
       render();
@@ -381,8 +387,16 @@ function render() {
     return;
   }
 
-  ui.body.append(node('h3', 'import-title',
-    t('plan.forMonth', { month: monthName(budget.month, getLanguage()) })));
+  const { list, comparison } = planLines(budget, entries);
+
+  /* The month alone — the tab is already titled "Your plan" directly above, and
+     a heading that repeats the title it sits under is a heading doing nothing.
+     The month named is the one `compare` actually measured against, not the
+     label stored when the plan was made. They are the same for any plan made
+     from now on, but a plan saved under the old behaviour carries next month's
+     name, and a screen should never claim to cover a month it does not. */
+  ui.body.append(node('p', 'screen-subtitle',
+    monthName(comparison.month, getLanguage())));
 
   if (budget.fromProfile) {
     const known = howMuchIsKnown(budget);
@@ -404,8 +418,6 @@ function render() {
     }
   }
 
-  const { list, comparison } = planLines(budget, entries);
-
   const totals = node('dl', 'understood');
   totals.append(
     figureRow(t('plan.planned'), formatPaise(budget.plannedPaise)),
@@ -414,20 +426,26 @@ function render() {
   );
   ui.body.append(totals);
 
+  /* Only a plan that genuinely will not balance gets a box like this. It is the
+     one thing on the screen a household must not scroll past. */
   for (const note of budget.notes || []) {
+    if (note.kind !== 'shortfall') continue;
+
     const box = node('div', 'verdict verdict-warn');
     const wrapper = node('div');
-    wrapper.append(node('strong', null,
-      note.kind === 'shortfall' ? 'This plan does not balance' : 'Some spending was trimmed'));
-    wrapper.append(node('span', null, note.text));
+    wrapper.append(node('strong', null, t('plan.doesNotBalance')));
+    wrapper.append(node('span', null, t('plan.shortfallNote')));
     box.append(wrapper);
     ui.body.append(box);
   }
 
-  ui.body.append(askBox(budget, entries));
-
+  /* The plan itself, then the box that offers to change it. It used to be the
+     other way round, which asked a household what they wanted different before
+     showing them what they had. */
   ui.body.append(node('p', 'import-note', t('plan.tapAny')));
   ui.body.append(list);
+
+  ui.body.append(askBox(budget, entries));
 
   const word = guidance(entries);
   if (word) ui.body.append(word);

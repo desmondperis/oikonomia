@@ -132,7 +132,7 @@ export function buildBudget(entries, options = {}) {
   }
 
   return {
-    month: nextMonthKey(now),
+    month: monthKey(now),
     incomePaise: income,
     lines,
     notes,
@@ -232,7 +232,7 @@ export function buildFromProfile(profile, options = {}) {
   }
 
   return {
-    month: nextMonthKey(now),
+    month: monthKey(now),
     incomePaise: income,
     lines,
     notes,
@@ -273,11 +273,6 @@ function addTo(lines, id, paise, why) {
     addedPaise: paise,
     basis: why
   });
-}
-
-function nextMonthKey(now) {
-  const date = new Date(now);
-  return monthKey(new Date(date.getFullYear(), date.getMonth() + 1, 1).getTime());
 }
 
 /* ---------- changing the plan ---------- */

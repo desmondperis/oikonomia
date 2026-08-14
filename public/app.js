@@ -50,11 +50,11 @@ const ui = {
   headlineMeter: el('headline-meter'),
   headlineMeterFill: el('headline-meter-fill'),
   headlineMeterToday: el('headline-meter-today'),
-  monthSpent: el('month-spent'),
   dashProgress: el('dash-progress'),
   streakFigure: el('streak-figure'),
   streakLabel: el('streak-label'),
   pointsFigure: el('points-figure'),
+  headlinePace: el('headline-pace'),
   paceFigure: el('pace-figure'),
   paceLabel: el('pace-label'),
   openRecords: el('open-records'),
@@ -292,17 +292,20 @@ function renderProgress(entries, budget) {
 
   ui.pointsFigure.textContent = String(progress.points);
 
+  /* The verdict on the month sits under the figure it is a verdict on. It only
+     appears once there is a plan to be measured against — with no plan there is
+     no such thing as ahead or behind, and inventing one would be a lie. */
   if (progress.pace) {
     const standing = PACE_STANDINGS.includes(progress.pace.standing)
       ? progress.pace.standing : 'onTrack';
 
     ui.paceFigure.textContent = t(`pace.${standing}`);
-    ui.paceLabel.textContent = t(`pace.${standing}.note`);
-    ui.paceFigure.parentElement.dataset.standing = standing;
+    ui.paceLabel.textContent = ` · ${t(`pace.${standing}.note`)}`;
+    ui.headlinePace.dataset.standing = standing;
+    ui.headlinePace.hidden = false;
   } else {
-    ui.paceFigure.textContent = String(progress.recorded);
-    ui.paceLabel.textContent = t('progress.recorded');
-    delete ui.paceFigure.parentElement.dataset.standing;
+    ui.headlinePace.hidden = true;
+    delete ui.headlinePace.dataset.standing;
   }
 }
 
@@ -378,13 +381,7 @@ function render() {
 
   const budget = loadBudget();
 
-  ui.monthSpent.textContent = formatPaise(spent);
   ui.greeting.textContent = greetingFor(new Date());
-
-  /* What has gone sits beside the add button — but only once there is a plan,
-     because until then the big figure above is already saying it, and the same
-     number twice on one screen makes a person doubt both. */
-  ui.monthSpent.parentElement.hidden = !budget;
 
   if (budget) {
     // Once there is a plan, what is left matters far more than what has gone.

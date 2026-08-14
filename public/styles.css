@@ -178,7 +178,6 @@ body {
   color: var(--accent);
   font-size: var(--text-caption);
   font-weight: 700;
-  letter-spacing: .08em;
 }
 
 .icon-button {
@@ -254,8 +253,6 @@ body {
   margin: .5rem .25rem 0.25rem;
   font-size: var(--text-caption);
   font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
   color: var(--ink-faint);
 }
 
@@ -446,8 +443,6 @@ body {
 .greeting {
   margin: 1rem 0 .75rem;
   font-size: var(--text-caption);
-  letter-spacing: .06em;
-  text-transform: uppercase;
   color: var(--ink-faint);
 }
 
@@ -457,15 +452,19 @@ body {
   border: 1px solid var(--rule);
 }
 
+/* The whole point of this bar is that a person can see whether they are ahead
+   of the month or behind it without reading a number: the fill is how much of
+   the plan has gone, the mark is how much of the month has. At seven pixels
+   with a half-faded two-pixel mark, neither was legible and it was decoration.
+   It needs enough height to read, and the mark needs to look like a mark. */
 .meter {
   position: relative;
-  height: .4375rem;
+  height: .75rem;
   border-radius: 999px;
   background: var(--rule);
-  overflow: hidden;
 }
 
-.meter-small { height: .3125rem; margin-top: 0.5rem; }
+.meter-small { height: .375rem; margin-top: 0.5rem; overflow: hidden; }
 
 .meter-fill {
   height: 100%;
@@ -477,48 +476,24 @@ body {
 .meter-fill[data-state="quick"] { background: var(--gold); }
 .meter-fill[data-state="over"]  { background: var(--danger); }
 
+/* Today, standing above the track so it cannot be mistaken for part of it. */
 .meter-today {
   position: absolute;
-  top: -2px;
-  bottom: -2px;
-  width: 2px;
+  top: -.25rem;
+  bottom: -.25rem;
+  width: .1875rem;
+  margin-left: -.09375rem;
+  border-radius: 999px;
   background: var(--ink-soft);
-  opacity: .5;
+  box-shadow: 0 0 0 .125rem var(--card);
 }
 
-.add-row {
-  display: flex;
-  align-items: stretch;
-  gap: .75rem;
+/* One button, the full width of the screen, with nothing beside it competing
+   for the thumb. A figure in a bordered box next to a button reads as a second
+   button that has been disabled, and a person hesitates over both. */
+.add-main {
+  width: 100%;
   margin-bottom: 1.5rem;
-}
-
-.add-main { flex: 1; }
-
-.add-total {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0 0.75rem;
-  border: 1px solid var(--rule);
-  border-radius: .875rem;
-  background: var(--card);
-}
-
-.add-total-label {
-  font-size: var(--text-caption);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-.add-total-figure {
-  font-size: var(--text-body);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .dash-block { margin-bottom: 1.5rem; }
@@ -560,7 +535,22 @@ body {
   font-size: var(--text-caption);
 }
 
-.streak-wide { flex: 1.6; }
+/* The verdict on the month, under the figure it is a verdict on. */
+.headline-pace {
+  margin: 0.75rem 0 0;
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.headline-pace span + span {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.headline-pace[data-standing="quick"] { color: var(--gold); }
+.headline-pace[data-standing="over"]  { color: var(--danger); }
+.headline-pace[data-standing="early"] { color: var(--ink-soft); }
 
 .streak-figure {
   font-size: var(--text-heading);
@@ -570,15 +560,8 @@ body {
 
 .streak-label {
   font-size: var(--text-caption);
-  letter-spacing: .04em;
-  text-transform: uppercase;
   color: var(--ink-faint);
 }
-
-.streak[data-standing="onTrack"] .streak-figure,
-.streak[data-standing="careful"] .streak-figure { color: var(--accent); }
-.streak[data-standing="quick"] .streak-figure { color: var(--gold); }
-.streak[data-standing="over"] .streak-figure { color: var(--danger); }
 
 .streak-alight { border-color: var(--gold); }
 
@@ -642,8 +625,6 @@ body {
   margin: 0 0 .75rem;
   font-size: var(--text-caption);
   font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
   color: var(--ink-faint);
 }
 
@@ -705,8 +686,6 @@ body {
   margin: 0;
   font-size: var(--text-caption);
   font-weight: 500;
-  letter-spacing: .06em;
-  text-transform: uppercase;
   color: var(--ink-faint);
 }
 
@@ -842,8 +821,6 @@ body {
   margin: var(--gap-section) 0 .625rem;
   font-size: var(--text-caption);
   font-weight: 600;
-  letter-spacing: .1em;
-  text-transform: uppercase;
   color: var(--ink-faint);
 }
 
@@ -1412,8 +1389,6 @@ body {
   margin: 0 0 0.5rem;
   font-size: var(--text-caption);
   font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
   color: var(--ink-faint);
 }
 
@@ -1861,7 +1836,6 @@ body {
 
 .landing-foot-name {
   font-weight: 600;
-  letter-spacing: .04em;
 }
 
 /* ---------- household ---------- */
@@ -1889,7 +1863,6 @@ body {
   display: block;
   font-size: var(--text-heading);
   font-weight: 600;
-  letter-spacing: .12em;
   color: var(--accent);
 }
 
@@ -1906,7 +1879,6 @@ body {
   font-size: var(--text-caption);
   text-align: center;
   color: var(--ink-faint);
-  letter-spacing: .04em;
 }
 
 /* ---------- asking ---------- */
