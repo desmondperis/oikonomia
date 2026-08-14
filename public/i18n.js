@@ -52,11 +52,13 @@ const WORDS = {
   'home.evening':        ['Good evening', 'शुभ संध्या'],
 
   /* ---------- next steps ---------- */
-  'next.noRecords':      ['Oikonomia has nothing to go on yet. Upload a few months of bank statements, or simply tell it about your household.',
-                          'ओइकोनोमिया के पास अभी कुछ नहीं है। कुछ महीनों के बैंक स्टेटमेंट डालें, या बस अपने घर के बारे में बता दें।'],
-  'next.noRecords.do':   ['Add a bank statement', 'बैंक स्टेटमेंट जोड़ें'],
-  'next.noPlan':         ['You have records but no plan yet. A plan turns "what did we spend" into "what have we still got".',
-                          'आपके पास रिकॉर्ड हैं पर योजना नहीं। योजना से पता चलता है कि "कितना खर्च हुआ" नहीं, बल्कि "अब कितना बचा है"।'],
+  /* Said to a household that has a plan but has recorded nothing against it. */
+  'next.noRecords':      ['Your plan is ready. It becomes useful the moment you start recording what you actually spend — even roughly, even one thing a day.',
+                          'आपकी योजना तैयार है। जैसे ही आप अपना असल ख़र्च दर्ज करने लगेंगे, यह काम आने लगेगी — मोटे तौर पर ही सही, दिन में एक चीज़ ही सही।'],
+  'next.noRecords.do':   ['Record something', 'कुछ दर्ज करें'],
+  /* The very first thing a new household is ever told. */
+  'next.noPlan.first':   ['Start with a plan. A few short questions about what comes in and what must go out — nothing about what you spend on food or petrol, because working that out is what this is for.',
+                          'योजना से शुरू करें। कुछ छोटे सवाल — कितना आता है और कितना निकलना ही है। खाने या पेट्रोल पर कितना जाता है, यह नहीं पूछा जाएगा — वही तो यह टूल पता करने के लिए है।'],
   'next.noPlan.do':      ['Make my plan', 'मेरी योजना बनाएँ'],
   'next.noKey':          ['Adding an assistant key lets Oikonomia sort unfamiliar shops and answer questions in plain words. It is free, and takes about two minutes.',
                           'सहायक की चाबी जोड़ने पर ओइकोनोमिया अनजान दुकानों को पहचान लेगा और सवालों के जवाब आसान शब्दों में देगा। यह मुफ़्त है, और दो मिनट लगते हैं।'],

@@ -279,6 +279,43 @@ if (ASKING_WHAT_THEY_SPEND.test(surveyJs)) {
   );
 }
 
+/* The first thing a new household is told to do is make a plan.
+ *
+ * This tool is survey-first on purpose. A bank statement can say a shop took
+ * ₹1,200; it cannot say whether that was the week's food or a birthday, and
+ * sorting that out is the work the household came here to do. Statements live
+ * in More as a way of filling in the past, not as the way in. Pointing a
+ * first-time user at them was the state this app shipped in for a while, and
+ * nothing in the tests noticed. */
+const shellSource = readFileSync(join(root, 'public', 'app.js'), 'utf8');
+const nextStep = /function renderNextStep[\s\S]*?\n}/.exec(shellSource);
+
+if (!nextStep) {
+  fail(
+    'The home screen still says what to do next',
+    'renderNextStep has gone from public/app.js, and with it the one instruction a ' +
+    'household with an empty screen has to go on.'
+  );
+} else {
+  const firstBranch = /if \(([^)]*)\)[\s\S]*?step\(/.exec(nextStep[0]);
+  if (!firstBranch || !/!\s*budget/.test(firstBranch[1])) {
+    fail(
+      'A household with no plan is sent to make one',
+      'The first branch of renderNextStep in public/app.js no longer tests for a missing ' +
+      'plan. Whatever it now offers first is what every new household will be told to do ' +
+      'before anything else.'
+    );
+  }
+  if (/showTab\(\s*['"]records['"]\s*\)/.test(nextStep[0])) {
+    fail(
+      'The way in is the survey, not a bank statement',
+      'renderNextStep in public/app.js sends somebody to the statements screen. Statements ' +
+      'fill in the past; they cannot say what money was for, which is the whole question. ' +
+      'They belong in More.'
+    );
+  }
+}
+
 // Points may only ever go up.
 const progressJs = readFileSync(join(root, 'public', 'progress.js'), 'utf8');
 if (/points\s*-=|points\s*=\s*[^;]*-\s*\w+|deduct|penal/i.test(progressJs)) {

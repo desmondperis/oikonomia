@@ -351,13 +351,22 @@ function renderNextStep(entries, budget) {
 
   ui.dashNext.hidden = true;
 
-  if (entries.length === 0) {
-    step(t('next.noRecords'), t('next.noRecords.do'), () => showTab('records'));
+  /* The plan comes first, always.
+     This used to send anyone with no records to bank statements, which was the
+     right advice back when a plan was built by reading the past. It is the
+     wrong advice now and it was the first thing a new household ever saw: a
+     screen sending them to the one feature deliberately moved to More, to
+     answer a question — what did we spend it on — that a statement cannot
+     answer. The survey takes a couple of minutes and asks nothing a person
+     does not already know. */
+  if (!budget) {
+    step(t('next.noPlan.first'), t('next.noPlan.do'), () => showTab('plan'));
     return;
   }
 
-  if (!budget) {
-    step(t('next.noPlan'), t('next.noPlan.do'), () => showTab('plan'));
+  /* A plan nobody records against is a wish. */
+  if (entries.length === 0) {
+    step(t('next.noRecords'), t('next.noRecords.do'), () => openSheet());
     return;
   }
 
