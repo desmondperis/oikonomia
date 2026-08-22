@@ -61,25 +61,35 @@ if (!/paise/i.test(appJs)) {
   );
 }
 
-// "The home screen shows one number and one button."
+// "The home screen shows one number, and adds only from the + in the tab bar."
+// The home panel once carried its own full-width Add button too — two controls
+// for the identical action, one of them a slab across the screen. The + at the
+// centre of the tab bar is now the single way to add.
 const home = /<section id="home"[^>]*>([\s\S]*?)<\/section>\s*<!-- Plan -->/.exec(indexHtml);
 if (!home) {
-  fail('The home screen shows one number and one button', 'The home panel was not found in public/app.html.');
+  fail('The home screen shows one number', 'The home panel was not found in public/app.html.');
 } else {
   const homeButtons = (home[1].match(/<button\b/g) || []).length;
   const homeFigures = (home[1].match(/class="headline-figure"/g) || []).length;
-  if (homeButtons !== 1) {
+  if (homeButtons !== 0) {
     fail(
-      'The home screen shows one number and one button',
-      `The home screen has ${homeButtons} buttons. It is allowed exactly one.`
+      'Nothing on the home screen competes with the + button',
+      `The home screen has ${homeButtons} static button(s); adding belongs to the + in the tab bar, alone.`
     );
   }
   if (homeFigures !== 1) {
     fail(
-      'The home screen shows one number and one button',
+      'The home screen shows one number',
       `The home screen has ${homeFigures} headline figures. It is allowed exactly one.`
     );
   }
+}
+
+if (!/<button[^>]*data-tab="add"/.test(indexHtml)) {
+  fail(
+    'Adding happens from the + in the tab bar',
+    'No data-tab="add" control was found in public/app.html; the app has no way to add.'
+  );
 }
 
 // "No sliders anywhere in the app."

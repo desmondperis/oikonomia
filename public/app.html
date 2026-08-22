@@ -51,17 +51,21 @@
           data-i18n-aria="settings.close" aria-label="Close">×</button>
 
   <div class="menu-body">
-    <p class="menu-heading" data-i18n="settings.appearance">Appearance</p>
-    <div class="segmented" id="theme-choice" role="group" data-value="system">
-      <button type="button" data-value="system" data-i18n="settings.themeSystem">Auto</button>
-      <button type="button" data-value="light" data-i18n="settings.themeLight">Light</button>
-      <button type="button" data-value="dark" data-i18n="settings.themeDark">Dark</button>
-    </div>
-
-    <p class="menu-heading" data-i18n="more.language">Language</p>
-    <div class="segmented" id="settings-language" role="group" data-value="en-IN">
-      <button type="button" data-value="en-IN">English</button>
-      <button type="button" data-value="hi-IN">हिन्दी</button>
+    <div class="menu-top">
+      <button type="button" id="theme-toggle" class="icon-toggle"
+              data-i18n-aria="settings.appearance" aria-label="Appearance">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/>
+        </svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5Z"/>
+        </svg>
+      </button>
+      <div class="segmented" id="settings-language" role="group" data-value="en-IN">
+        <button type="button" data-value="en-IN">English</button>
+        <button type="button" data-value="hi-IN">हिन्दी</button>
+      </div>
     </div>
 
     <div id="private-voice-row" hidden>
@@ -84,6 +88,9 @@
        data-i18n="settings.feedback">Send feedback</a>
 
     <hr class="menu-rule">
+
+    <button type="button" id="erase-all" class="menu-item menu-item-danger"
+            data-i18n="more.erase">Erase everything on this device</button>
 
     <button type="button" id="sign-out" class="menu-item menu-item-quiet" hidden
             data-i18n="more.signOut">Sign out</button>
@@ -115,10 +122,6 @@
         <span id="pace-figure"></span><span id="pace-label"></span>
       </p>
     </section>
-
-    <button id="add-button" class="primary-action add-main" type="button">
-      <span aria-hidden="true">+</span> <span data-i18n="tab.add">Add expense</span>
-    </button>
 
     <!-- keeping at it -->
     <section id="dash-progress" class="streak-row" hidden>
@@ -180,14 +183,12 @@
 
     <div id="import-choose">
       <p class="import-lead">
-        Upload your statements and I'll read them for you. You can choose as many
-        as you like at once — every account, every month. They stay on your phone
-        and are never sent anywhere.
+        Choose as many as you like — every account, every month. They stay on
+        your phone.
       </p>
 
       <p class="import-note">
-        If your bank offers Excel or CSV from net banking, choose that over PDF.
-        It reads instantly and is far less likely to be misread.
+        Excel or CSV reads more accurately than PDF, if your bank offers it.
       </p>
 
       <label class="file-drop" for="statement-file">
@@ -267,9 +268,8 @@
 
       <div class="disclosure-body">
         <p class="row-help">
-          Your totals are worked out by Oikonomia itself. The assistant sorts
-          spending into everyday categories and answers questions in plain words.
-          It runs on a free model through your own OpenRouter account.
+          Sorts your spending and answers questions in plain words. Free,
+          through your own OpenRouter account.
         </p>
 
         <ol class="steps">
@@ -288,21 +288,6 @@
         <button type="button" id="api-remove" class="secondary-action full" data-i18n="more.removeKey" hidden>Remove key</button>
       </div>
     </details>
-
-    <h3 class="section-heading" data-i18n="more.yourData">Your data</h3>
-
-    <p class="row-help">
-      Everything Oikonomia knows about your household is kept on this device.
-      Nothing about your money is stored on the server —
-      <a href="/privacy" target="_blank" rel="noopener">how this works</a>.
-    </p>
-
-    <button type="button" id="erase-all" class="row row-action row-danger">
-      <span class="row-main">
-        <span class="row-title" data-i18n="more.erase">Erase everything on this device</span>
-        <span class="row-note" data-i18n="more.eraseNote">Records, plan, categories and key</span>
-      </span>
-    </button>
 
   </section>
 

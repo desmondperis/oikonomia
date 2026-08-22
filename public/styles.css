@@ -288,6 +288,53 @@ body {
 .menu-item:active { background: var(--paper); }
 .menu-item-quiet { color: var(--ink-soft); }
 
+/* Erasing everything is red but not loud: a last item, not a billboard. */
+.menu-item-danger { color: var(--danger); }
+.menu-item-danger:active { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+
+/* Appearance and language share one compact row, no headings. */
+.menu-top {
+  display: flex;
+  align-items: stretch;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.menu-top .segmented { flex: 1; }
+
+/* One icon that says which mode you are in and flips it on tap. */
+.icon-toggle {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  border: 1px solid var(--rule);
+  border-radius: .75rem;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform .1s cubic-bezier(.2, .9, .3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.icon-toggle:active { transform: scale(.94); }
+
+.icon-toggle svg {
+  width: 1.375rem;
+  height: 1.375rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Default and light both show the moon; dark shows the sun. */
+.icon-toggle .i-sun { display: none; }
+.icon-toggle .i-moon { display: block; }
+.icon-toggle[data-mode="dark"] .i-sun { display: block; }
+.icon-toggle[data-mode="dark"] .i-moon { display: none; }
+
 /* Two or three choices are better shown than hidden behind a dropdown. */
 .segmented {
   display: flex;
@@ -491,11 +538,6 @@ body {
 /* One button, the full width of the screen, with nothing beside it competing
    for the thumb. A figure in a bordered box next to a button reads as a second
    button that has been disabled, and a person hesitates over both. */
-.add-main {
-  width: 100%;
-  margin-bottom: 1.5rem;
-}
-
 .dash-block { margin-bottom: 1.5rem; }
 
 /* ---------- keeping at it ---------- */
@@ -714,10 +756,10 @@ body {
   justify-content: center;
   gap: .5rem;
   width: 100%;
-  min-height: 3.5rem;
+  min-height: 3rem;
   padding: 0 1rem;
   border: 0;
-  border-radius: 1rem;
+  border-radius: .875rem;
   background: var(--accent);
   color: var(--accent-ink);
   font: inherit;

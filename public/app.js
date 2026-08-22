@@ -66,7 +66,6 @@ const ui = {
   headlineNote: el('headline-note'),
   list: el('entry-list'),
   empty: el('entries-empty'),
-  addButton: el('add-button'),
   sheet: el('sheet'),
   backdrop: el('sheet-backdrop'),
   form: el('entry-form'),
@@ -90,7 +89,7 @@ const ui = {
   settingsOpen: el('settings-open'),
   settingsClose: el('settings-close'),
   settingsBackdrop: el('settings-backdrop'),
-  themeChoice: el('theme-choice'),
+  themeToggle: el('theme-toggle'),
   privateVoiceRow: el('private-voice-row'),
   privateVoice: el('private-voice'),
   signedInAs: el('signed-in-as'),
@@ -135,7 +134,6 @@ function askLanguageIfNeeded() {
     choice.addEventListener('click', () => {
       rememberLanguage(choice.dataset.language);
       ui.welcome.hidden = true;
-      ui.addButton.focus();
     });
   }
 }
@@ -361,12 +359,6 @@ function renderNextStep(entries, budget) {
      does not already know. */
   if (!budget) {
     step(t('next.noPlan.first'), t('next.noPlan.do'), () => showTab('plan'));
-    return;
-  }
-
-  /* A plan nobody records against is a wish. */
-  if (entries.length === 0) {
-    step(t('next.noRecords'), t('next.noRecords.do'), () => openSheet());
     return;
   }
 
@@ -1026,6 +1018,19 @@ function rememberTheme(choice) {
   applyTheme(choice);
 }
 
+/* What the screen is actually showing right now, following the phone until the
+   household has said otherwise. */
+function showingDark() {
+  const choice = loadTheme();
+  if (choice === 'dark') return true;
+  if (choice === 'light') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function markThemeToggle() {
+  ui.themeToggle.dataset.mode = showingDark() ? 'dark' : 'light';
+}
+
 /* ---------- segmented choices ---------- */
 
 /**
@@ -1058,7 +1063,7 @@ function setSegmented(group, value) {
 
 function openSettingsMenu() {
   setSegmented(ui.settingsLanguage, language);
-  setSegmented(ui.themeChoice, loadTheme());
+  markThemeToggle();
 
   // Only offered where the phone can actually do it.
   ui.privateVoiceRow.hidden = !privateCanListen();
@@ -1128,7 +1133,6 @@ async function saveAndTestKey() {
 
 /* ---------- wiring ---------- */
 
-ui.addButton.addEventListener('click', () => openSheet());
 ui.cancel.addEventListener('click', closeSheet);
 ui.deleteButton.addEventListener('click', handleDelete);
 ui.backdrop.addEventListener('click', closeSheet);
@@ -1144,14 +1148,10 @@ ui.apiSave.addEventListener('click', saveAndTestKey);
 
 /* Erasing everything is deliberate and complete: records, plan, learned
    categories, the key. Two taps, and then it is genuinely gone. */
-const eraseTitle = ui.eraseAll.querySelector('.row-title');
-const eraseNote = ui.eraseAll.querySelector('.row-note');
-
 ui.eraseAll.addEventListener('click', () => {
   if (ui.eraseAll.dataset.armed !== 'true') {
     ui.eraseAll.dataset.armed = 'true';
-    eraseTitle.textContent = t('more.eraseConfirm');
-    eraseNote.textContent = t('more.eraseWarn');
+    ui.eraseAll.textContent = t('more.eraseConfirm');
     return;
   }
 
@@ -1164,8 +1164,7 @@ ui.eraseAll.addEventListener('click', () => {
   } catch { /* nothing more we can do */ }
 
   ui.eraseAll.dataset.armed = 'false';
-  eraseTitle.textContent = t('more.erase');
-  eraseNote.textContent = t('more.eraseNote');
+  ui.eraseAll.textContent = t('more.erase');
   render();
   showToast(t('more.erased'));
 });
@@ -1179,7 +1178,10 @@ ui.apiRemove.addEventListener('click', () => {
 ui.openRecords.addEventListener('click', () => showTab('records'));
 
 setUpSegmented(ui.settingsLanguage, rememberLanguage);
-setUpSegmented(ui.themeChoice, rememberTheme);
+ui.themeToggle.addEventListener('click', () => {
+  rememberTheme(showingDark() ? 'light' : 'dark');
+  markThemeToggle();
+});
 setUpSegmented(ui.privateVoice, (value) => setPrivateVoice(value === 'yes'));
 
 ui.settingsOpen.addEventListener('click', () => {
